@@ -135,7 +135,8 @@ return [
 
     // ── TV show detail ────────────────────────────────────────────
     'show' => [
-        'seasons'        => 'Seasons',
+        'seasons'        => 'seasons',
+        'episodes'       => 'episodes',
         'season'         => 'Season :number',
         'episode'        => 'Episode :number',
         'download'       => 'Download',
