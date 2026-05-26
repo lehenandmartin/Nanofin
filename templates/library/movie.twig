@@ -1,0 +1,122 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}{{ item.Name }} — {{ settings.site_title ?? 'Nanofin' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    {# ── Back link ────────────────────────────────────────────── #}
+    <a href="{{ url('/') }}" class="inline-flex items-center gap-1.5 text-sm text-[var(--color-muted)]
+                       hover:text-[var(--color-text)] mb-8 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        {{ trans('library.title') }}
+    </a>
+
+    <div class="flex flex-col sm:flex-row gap-8">
+
+        {# ── Poster ───────────────────────────────────────────── #}
+        <div class="flex-shrink-0 w-full sm:w-52">
+            <img src="{{ url(item.posterUrl) }}"
+                 alt="{{ item.Name }}"
+                 class="w-full sm:w-52 rounded-xl shadow-2xl object-cover aspect-[2/3]
+                        bg-[var(--color-surface-alt)]">
+        </div>
+
+        {# ── Metadata + actions ───────────────────────────────── #}
+        <div class="flex-1 min-w-0">
+
+            {# Badge + title #}
+            <div class="mb-3">
+                <span class="badge-movie mb-2 inline-block">{{ trans('library.movies') }}</span>
+                <h1 class="text-3xl sm:text-4xl font-black text-[var(--color-text)] leading-tight">
+                    {{ item.Name }}
+                </h1>
+                {% if item.OriginalTitle is defined and item.OriginalTitle and item.OriginalTitle != item.Name %}
+                <p class="text-[var(--color-muted)] mt-0.5 text-sm italic">{{ item.OriginalTitle }}</p>
+                {% endif %}
+            </div>
+
+            {# Quick stats row #}
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--color-muted)] mb-5">
+                {% if item.year %}
+                <span class="flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    {{ item.year }}
+                </span>
+                {% endif %}
+                {% if duration %}
+                <span class="flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {{ duration }}
+                </span>
+                {% endif %}
+                {% if item.rating > 0 %}
+                <span class="flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    {{ item.rating }}
+                </span>
+                {% endif %}
+                {% if item.fileSize %}
+                <span class="flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    {{ item.fileSize }}
+                </span>
+                {% endif %}
+            </div>
+
+            {# Genres #}
+            {% if item.genres|length > 0 %}
+            <div class="flex flex-wrap gap-2 mb-5">
+                {% for genre in item.genres %}
+                <span class="px-2.5 py-1 rounded-full text-xs bg-[var(--color-surface-alt)]
+                             border border-[var(--color-border)] text-[var(--color-muted)]">
+                    {{ genre }}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {# Synopsis #}
+            {% if item.Overview is defined and item.Overview %}
+            <div class="mb-6">
+                <h2 class="text-xs font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-2">
+                    {{ trans('movie.synopsis') }}
+                </h2>
+                <p class="text-[var(--color-text)] leading-relaxed text-sm">
+                    {{ item.Overview }}
+                </p>
+            </div>
+            {% else %}
+            <p class="text-[var(--color-muted)] text-sm italic mb-6">{{ trans('movie.no_synopsis') }}</p>
+            {% endif %}
+
+            {# Download button #}
+            <a href="{{ url('/download/' ~ item.Id) }}"
+               class="btn-primary gap-2"
+               x-data="{ clicked: false }"
+               @click="clicked = true; setTimeout(() => clicked = false, 3000)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                <span x-show="!clicked">{{ trans('movie.download') }}</span>
+                <span x-show="clicked" x-cloak>{{ trans('download.starting') }}</span>
+            </a>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

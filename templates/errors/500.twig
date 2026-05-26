@@ -1,0 +1,12 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}500 — {{ trans('error.server_error') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-24 text-center">
+    <p class="text-6xl font-black text-red-500 mb-4">500</p>
+    <h1 class="text-2xl font-bold mb-2">{{ trans('error.server_error') }}</h1>
+    <p class="text-[var(--color-muted)] mb-8">{{ trans('error.server_error_detail') }}</p>
+    <a href="{{ url('/') }}" class="btn-primary">{{ trans('error.back_home') }}</a>
+</div>
+{% endblock %}

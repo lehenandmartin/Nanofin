@@ -1,0 +1,12 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}404 — {{ trans('error.not_found') }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-24 text-center">
+    <p class="text-6xl font-black text-[var(--color-accent)] mb-4">404</p>
+    <h1 class="text-2xl font-bold mb-2">{{ trans('error.not_found') }}</h1>
+    <p class="text-[var(--color-muted)] mb-8">{{ trans('error.not_found_detail') }}</p>
+    <a href="{{ url('/') }}" class="btn-primary">{{ trans('error.back_home') }}</a>
+</div>
+{% endblock %}

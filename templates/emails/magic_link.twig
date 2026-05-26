@@ -1,0 +1,26 @@
+{% extends 'emails/base.twig' %}
+
+{% block subject %}{{ trans('email.magic_link.subject', {'site': siteName}) }}{% endblock %}
+
+{% block body %}
+<p>{{ trans('email.greeting', {'username': username}) }}</p>
+<p>{{ trans('email.magic_link.intro', {'site': siteName})|raw }}</p>
+<p>
+    <a href="{{ magicUrl }}" class="btn">{{ trans('email.signin_btn', {'site': siteName}) }}</a>
+</p>
+<p style="font-size:13px;color:#8b8fa8;">
+    {{ trans('email.magic_link.expires')|raw }}<br>
+    {{ trans('email.magic_link.ignore') }}
+</p>
+{% endblock %}
+
+{% block meta %}
+<div class="meta">
+  <table>
+    <tr>
+      <td>{{ trans('email.label_link') }}</td>
+      <td><a href="{{ magicUrl }}" style="color:#6c63ff;word-break:break-all;">{{ magicUrl }}</a></td>
+    </tr>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* ── Custom design tokens ───────────────────────────────────────── */
+@layer base {
+  :root {
+    --color-bg: #0f1117;
+    --color-surface: #1a1d27;
+    --color-surface-alt: #21253a;
+    --color-border: #2c3150;
+    --color-accent: #6c63ff;
+    --color-accent-hover: #857dff;
+    --color-text: #e4e6f0;
+    --color-muted: #8b8fa8;
+  }
+
+  body {
+    @apply bg-[var(--color-bg)] text-[var(--color-text)] antialiased;
+  }
+
+  a {
+    @apply text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors;
+  }
+}
+
+/* ── Animations ─────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+@keyframes shimmer {
+  from { background-position: -600px 0; }
+  to   { background-position:  600px 0; }
+}
+
+/* ── Poster card ─────────────────────────────────────────────────── */
+@layer components {
+  .card {
+    @apply rounded-xl overflow-hidden bg-[var(--color-surface)] border border-[var(--color-border)]
+           transition-transform duration-200 hover:scale-[1.03] hover:shadow-2xl;
+  }
+
+  .card-img {
+    @apply w-full aspect-[2/3] object-cover;
+  }
+
+  /* btn base — shared properties inlined to avoid @apply-on-custom-class */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium
+           transition-colors duration-150 cursor-pointer
+           bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium
+           transition-colors duration-150 cursor-pointer
+           border border-[var(--color-border)] hover:bg-[var(--color-surface-alt)]
+           text-[var(--color-text)];
+  }
+
+  .form-input {
+    @apply w-full px-3 py-2 rounded-lg bg-[var(--color-surface-alt)] border border-[var(--color-border)]
+           text-[var(--color-text)] placeholder-[var(--color-muted)]
+           focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-[var(--color-muted)] mb-1;
+  }
+
+  .badge {
+    @apply inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide;
+  }
+
+  .badge-movie {
+    @apply inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide
+           bg-blue-600/20 text-blue-400;
+  }
+
+  /* Skeleton card shimmer */
+  .skeleton-pulse {
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-alt) 0%,
+      var(--color-surface)     50%,
+      var(--color-surface-alt) 100%
+    );
+    background-size: 600px 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  .badge-show {
+    @apply inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide
+           bg-purple-600/20 text-purple-400;
+  }
+}

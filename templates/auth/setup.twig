@@ -1,0 +1,185 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}{{ trans('setup.title') }} — Nanofin{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-lg">
+
+        {# Header #}
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl
+                        bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/30 mb-4">
+                <svg class="w-8 h-8 text-[var(--color-accent)]" fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-black text-[var(--color-text)]">{{ trans('setup.title') }}</h1>
+            <p class="text-[var(--color-muted)] text-sm mt-1">
+                {{ trans('setup.title') }}
+            </p>
+        </div>
+
+        {# ── Requirements check ─────────────────────────────── #}
+        {% if requirements is defined %}
+        <div class="mb-5 bg-[var(--color-surface)] border
+                    {% if requirements.all_ok %}border-green-500/30{% else %}border-red-500/30{% endif %}
+                    rounded-2xl p-5 shadow-xl">
+
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-semibold text-[var(--color-text)]">
+                    {{ trans('setup.requirements.title') }}
+                </h2>
+                {% if requirements.all_ok %}
+                <span class="text-xs text-green-400 font-medium flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                    </svg>
+                    {{ trans('setup.requirements.all_ok') }}
+                </span>
+                {% else %}
+                <span class="text-xs text-red-400 font-medium">{{ trans('setup.requirements.some_fail') }}</span>
+                {% endif %}
+            </div>
+
+            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+            {% for item in requirements.items %}
+            <li class="flex items-center gap-2 text-xs">
+                {% if item.ok %}
+                <svg class="w-3.5 h-3.5 text-green-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                </svg>
+                <span class="text-[var(--color-muted)]">
+                {% else %}
+                <svg class="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/>
+                </svg>
+                <span class="text-red-400 font-medium">
+                {% endif %}
+                    {{ trans('setup.requirements.' ~ item.key) }}
+                    {% if item.value %}<em class="not-italic opacity-60">({{ item.value }})</em>{% endif %}
+                </span>
+            </li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" action="{{ url('/setup') }}" novalidate
+              x-data="{ loading: false }" @submit="loading = true">
+
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            {# ── Section 1 : Admin account ───────────────────────── #}
+            <div class="bg-[var(--color-surface)] border border-[var(--color-border)]
+                        rounded-2xl p-6 shadow-xl mb-5">
+
+                <h2 class="text-base font-semibold text-[var(--color-text)] mb-4 flex items-center gap-2">
+                    <span class="flex items-center justify-center w-6 h-6 rounded-full
+                                 bg-[var(--color-accent)] text-white text-xs font-bold">1</span>
+                    {{ trans('setup.step1') }}
+                </h2>
+
+                {# Username #}
+                <div class="mb-4">
+                    <label for="username" class="form-label">{{ trans('setup.username') }}</label>
+                    <input id="username" type="text" name="username"
+                           class="form-input {% if errors.username is defined %}ring-2 ring-red-500{% endif %}"
+                           value="{{ old.username ?? '' }}"
+                           autocomplete="username" autofocus required>
+                    {% if errors.username is defined %}
+                    <p class="mt-1 text-xs text-red-400">{{ errors.username }}</p>
+                    {% endif %}
+                </div>
+
+                {# Password #}
+                <div class="mb-4">
+                    <label for="password" class="form-label">{{ trans('setup.password') }}</label>
+                    <input id="password" type="password" name="password"
+                           class="form-input {% if errors.password is defined %}ring-2 ring-red-500{% endif %}"
+                           autocomplete="new-password" required>
+                    {% if errors.password is defined %}
+                    <p class="mt-1 text-xs text-red-400">{{ errors.password }}</p>
+                    {% endif %}
+                </div>
+
+                {# Email #}
+                <div>
+                    <label for="email" class="form-label">{{ trans('setup.email') }}</label>
+                    <input id="email" type="email" name="email"
+                           class="form-input {% if errors.email is defined %}ring-2 ring-red-500{% endif %}"
+                           value="{{ old.email ?? '' }}"
+                           autocomplete="email" required>
+                    {% if errors.email is defined %}
+                    <p class="mt-1 text-xs text-red-400">{{ errors.email }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# ── Section 2 : Jellyfin ────────────────────────────── #}
+            <div class="bg-[var(--color-surface)] border border-[var(--color-border)]
+                        rounded-2xl p-6 shadow-xl mb-5">
+
+                <h2 class="text-base font-semibold text-[var(--color-text)] mb-4 flex items-center gap-2">
+                    <span class="flex items-center justify-center w-6 h-6 rounded-full
+                                 bg-[var(--color-accent)] text-white text-xs font-bold">2</span>
+                    {{ trans('setup.step2') }}
+                </h2>
+
+                {# Jellyfin URL #}
+                <div class="mb-4">
+                    <label for="jellyfin_url" class="form-label">{{ trans('setup.jellyfin_url') }}</label>
+                    <input id="jellyfin_url" type="url" name="jellyfin_url"
+                           class="form-input {% if errors.jellyfin_url is defined %}ring-2 ring-red-500{% endif %}"
+                           value="{{ old.jellyfin_url ?? '' }}"
+                           placeholder="http://192.168.1.10:8096" required>
+                    {% if errors.jellyfin_url is defined %}
+                    <p class="mt-1 text-xs text-red-400">{{ errors.jellyfin_url }}</p>
+                    {% endif %}
+                </div>
+
+                {# API Key #}
+                <div class="mb-4">
+                    <label for="jellyfin_api_key" class="form-label">{{ trans('setup.jellyfin_api_key') }}</label>
+                    <input id="jellyfin_api_key" type="text" name="jellyfin_api_key"
+                           class="form-input font-mono {% if errors.jellyfin_api_key is defined %}ring-2 ring-red-500{% endif %}"
+                           value="{{ old.jellyfin_api_key ?? '' }}"
+                           autocomplete="off" spellcheck="false" required>
+                    {% if errors.jellyfin_api_key is defined %}
+                    <p class="mt-1 text-xs text-red-400">{{ errors.jellyfin_api_key }}</p>
+                    {% endif %}
+                    <p class="mt-1.5 text-xs text-[var(--color-muted)]">
+                        {{ trans('setup.jellyfin_api_key_hint') }}
+                    </p>
+                </div>
+
+                {# Site title #}
+                <div>
+                    <label for="site_title" class="form-label">{{ trans('setup.site_title') }}</label>
+                    <input id="site_title" type="text" name="site_title"
+                           class="form-input"
+                           value="{{ old.site_title ?? 'Nanofin' }}">
+                </div>
+            </div>
+
+            {# ── Submit ──────────────────────────────────────────── #}
+            <button type="submit" class="btn-primary w-full justify-center text-base py-3"
+                    :disabled="loading">
+                <span x-show="!loading">{{ trans('setup.submit') }}</span>
+                <span x-show="loading" x-cloak class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                         fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    {{ trans('setup.submit') }}
+                </span>
+            </button>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

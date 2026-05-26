@@ -1,0 +1,82 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}{{ trans('profile.title') }} — {{ settings.site_title ?? 'Nanofin' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+
+    <h1 class="text-2xl font-black text-[var(--color-text)] mb-8">
+        {{ trans('profile.title') }}
+        <span class="text-base font-normal text-[var(--color-muted)] ml-2">
+            {{ auth_user.username }}
+        </span>
+    </h1>
+
+    {# ── Change password ───────────────────────────────────────── #}
+    <section class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-5">
+            {{ trans('profile.password.title') }}
+        </h2>
+
+        <form method="post" action="{{ url('/account/password') }}"
+              x-data="{ loading: false }" @submit="loading = true"
+              class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div>
+                <label class="form-label">{{ trans('profile.password.current') }}</label>
+                <input type="password" name="current_password" class="form-input"
+                       autocomplete="current-password" required>
+            </div>
+            <div>
+                <label class="form-label">{{ trans('profile.password.new') }}</label>
+                <input type="password" name="new_password" class="form-input"
+                       autocomplete="new-password" required minlength="8">
+            </div>
+            <div>
+                <label class="form-label">{{ trans('profile.password.confirm') }}</label>
+                <input type="password" name="confirm_password" class="form-input"
+                       autocomplete="new-password" required minlength="8">
+            </div>
+
+            <div class="flex justify-end pt-1">
+                <button type="submit" class="btn-primary" :disabled="loading">
+                    <svg x-show="loading" x-cloak class="animate-spin w-4 h-4"
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    {{ trans('profile.password.save') }}
+                </button>
+            </div>
+        </form>
+    </section>
+
+    {# ── Email address ─────────────────────────────────────────── #}
+    <section class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-5">
+            {{ trans('profile.email.title') }}
+        </h2>
+
+        {% if email %}
+        <p class="text-sm text-[var(--color-muted)] mb-4">
+            {{ trans('profile.email.current') }}:
+            <span class="text-[var(--color-text)] font-medium ml-1">{{ email }}</span>
+        </p>
+        {% endif %}
+
+        <form method="post" action="{{ url('/account/email') }}"
+              x-data="{ loading: false }" @submit="loading = true"
+              class="flex gap-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="email" name="email" class="form-input flex-1"
+                   placeholder="{{ trans('profile.email.placeholder') }}" required>
+            <button type="submit" class="btn-ghost flex-shrink-0" :disabled="loading">
+                {{ trans('profile.email.save') }}
+            </button>
+        </form>
+    </section>
+
+
+</div>
+{% endblock %}

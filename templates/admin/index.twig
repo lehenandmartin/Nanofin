@@ -1,0 +1,107 @@
+{% extends 'layouts/admin.twig' %}
+
+{% block title %}{{ trans('admin.nav.dashboard') }} — {{ trans('admin.title') }}{% endblock %}
+
+{% block admin_content %}
+
+<h1 class="text-2xl font-black text-[var(--color-text)] mb-6">
+    {{ trans('admin.nav.dashboard') }}
+</h1>
+
+{# ── Stats ─────────────────────────────────────────────────── #}
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+
+    {# Jellyfin status #}
+    <div class="bg-[var(--color-surface)] border
+                {% if jellyfinOk %}border-green-500/30{% else %}border-red-500/30{% endif %}
+                rounded-xl p-5">
+        <p class="text-xs font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-1">
+            Jellyfin
+        </p>
+        {% if jellyfinOk %}
+        <p class="text-lg font-bold text-green-400 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+            </svg>
+            {{ trans('admin.dashboard.jellyfin_connected') }}
+        </p>
+        {% else %}
+        <p class="text-sm font-bold text-red-400 flex items-center gap-2">
+            <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/>
+            </svg>
+            <span class="truncate" title="{{ jellyfinError }}">{{ trans('admin.dashboard.jellyfin_unreachable') }}</span>
+        </p>
+        {% if jellyfinError %}
+        <p class="text-xs text-[var(--color-muted)] mt-1 truncate" title="{{ jellyfinError }}">
+            {{ jellyfinError|slice(0, 60) }}{% if jellyfinError|length > 60 %}…{% endif %}
+        </p>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    {# Users #}
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5">
+        <p class="text-xs font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-1">
+            {{ trans('admin.nav.users') }}
+        </p>
+        <p class="text-3xl font-black text-[var(--color-text)]">{{ userCount }}</p>
+    </div>
+
+    {# Downloads #}
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5">
+        <p class="text-xs font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-1">
+            {{ trans('admin.logs.title') }}
+        </p>
+        <p class="text-3xl font-black text-[var(--color-text)]">{{ downloadCount }}</p>
+    </div>
+</div>
+
+{# ── Recent downloads ──────────────────────────────────────── #}
+{% if recentDownloads|length > 0 %}
+<div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+    <div class="px-5 py-3 border-b border-[var(--color-border)]">
+        <h2 class="text-sm font-semibold text-[var(--color-text)]">
+            {{ trans('admin.logs.title') }}
+        </h2>
+    </div>
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-xs uppercase tracking-widest text-[var(--color-muted)]
+                       border-b border-[var(--color-border)]">
+                <th class="px-5 py-2.5 text-left">{{ trans('admin.logs.item') }}</th>
+                <th class="px-5 py-2.5 text-left hidden sm:table-cell">{{ trans('admin.logs.user') }}</th>
+                <th class="px-5 py-2.5 text-left hidden md:table-cell">{{ trans('admin.logs.type') }}</th>
+                <th class="px-5 py-2.5 text-left">{{ trans('admin.logs.date') }}</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--color-border)]">
+            {% for log in recentDownloads %}
+            <tr class="hover:bg-[var(--color-surface-alt)]">
+                <td class="px-5 py-3 font-medium text-[var(--color-text)] truncate max-w-xs">
+                    {{ log.item_title }}
+                </td>
+                <td class="px-5 py-3 text-[var(--color-muted)] hidden sm:table-cell">
+                    {{ log.username ?? '—' }}
+                </td>
+                <td class="px-5 py-3 hidden md:table-cell">
+                    <span class="{{ log.item_type == 'movie' ? 'badge-movie' : 'badge-show' }}">
+                        {{ trans('admin.logs.type_' ~ log.item_type) }}
+                    </span>
+                </td>
+                <td class="px-5 py-3 text-[var(--color-muted)] text-xs whitespace-nowrap">
+                    {{ log.downloaded_at }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="px-5 py-3 border-t border-[var(--color-border)]">
+        <a href="{{ url('/admin/logs') }}" class="text-sm text-[var(--color-accent)] hover:underline">
+            {{ trans('admin.nav.logs') }} →
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

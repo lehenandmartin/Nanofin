@@ -1,0 +1,397 @@
+{% extends 'layouts/admin.twig' %}
+
+{% block title %}{{ trans('admin.users.title') }} — {{ trans('admin.title') }}{% endblock %}
+
+{% block admin_content %}
+
+{# ── Wrap table + edit modal in a single Alpine component ──────── #}
+{# Buttons call openModal() / closeModal() directly — no cross-    #}
+{# component $dispatch needed for the edit modal.                  #}
+<div x-data="editUserModal" @keydown.escape.window="visible = false">
+
+{# ── Header ────────────────────────────────────────────────────── #}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-black text-[var(--color-text)]">
+        {{ trans('admin.users.title') }}
+    </h1>
+    <button @click="$dispatch('open-create-modal')" class="btn-primary text-sm">
+        + {{ trans('admin.users.create') }}
+    </button>
+</div>
+
+{# ── Users table ───────────────────────────────────────────────── #}
+<div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-xs uppercase tracking-widest text-[var(--color-muted)]
+                       border-b border-[var(--color-border)]">
+                <th class="px-5 py-3 text-left">{{ trans('admin.users.username') }}</th>
+                <th class="px-5 py-3 text-left hidden md:table-cell">{{ trans('admin.users.email') }}</th>
+                <th class="px-5 py-3 text-left hidden sm:table-cell">{{ trans('admin.users.role') }}</th>
+                <th class="px-5 py-3 text-left hidden lg:table-cell">{{ trans('admin.users.access') }}</th>
+                <th class="px-5 py-3 text-left hidden xl:table-cell">{{ trans('admin.users.last_activity') }}</th>
+                <th class="px-5 py-3 text-right">{{ trans('admin.users.actions') }}</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--color-border)]">
+        {% for user in userList %}
+        <tr class="hover:bg-[var(--color-surface-alt)]">
+
+            {# Username #}
+            <td class="px-5 py-3 font-medium text-[var(--color-text)]">
+                {{ user.username }}
+                {% if user.id == auth_user.id %}
+                <span class="ml-1 text-xs text-[var(--color-accent)]">
+                    ({{ trans('admin.users.you') }})
+                </span>
+                {% endif %}
+            </td>
+
+            {# Email #}
+            <td class="px-5 py-3 text-[var(--color-muted)] hidden md:table-cell">
+                {% if user.email %}
+                    <span class="truncate max-w-[14rem] block">{{ user.email }}</span>
+                {% else %}
+                    <span class="text-orange-400">—</span>
+                {% endif %}
+            </td>
+
+            {# Role badge #}
+            <td class="px-5 py-3 hidden sm:table-cell">
+                <span class="{{ user.role == 'admin' ? 'badge-movie' : 'badge-show' }}">
+                    {{ trans('admin.users.roles.' ~ user.role) }}
+                </span>
+            </td>
+
+            {# Content access #}
+            <td class="px-5 py-3 text-[var(--color-muted)] text-xs hidden lg:table-cell">
+                {{ trans('admin.users.access_types.' ~ user.content_access) }}
+            </td>
+
+            {# Last activity #}
+            <td class="px-5 py-3 text-[var(--color-muted)] text-xs hidden xl:table-cell whitespace-nowrap">
+                {{ user.last_activity ?? '—' }}
+            </td>
+
+            {# Actions — call openModal() directly (same x-data context) #}
+            <td class="px-5 py-3 text-right">
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button"
+                            @click="openModal({
+                                id:       {{ user.id }},
+                                username: {{ user.username|json_encode }},
+                                email:    {{ user.email|json_encode }},
+                                role:     {{ user.role|json_encode }},
+                                access:   {{ user.content_access|json_encode }},
+                                isSelf:   {{ (user.id == auth_user.id) ? 'true' : 'false' }}
+                            })"
+                            class="btn-ghost text-xs py-1 px-3">
+                        {{ trans('admin.users.edit') }}
+                    </button>
+                    {% if user.id != auth_user.id %}
+                    <form method="post" action="{{ url('/admin/users/' ~ user.id ~ '/delete') }}"
+                          x-data
+                          @submit.prevent="if(confirm('{{ trans('admin.users.delete_confirm')|e('js') }}')) $el.submit()">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit"
+                                class="text-xs text-red-400 hover:text-red-300 border border-red-500/30
+                                       rounded-lg px-2.5 py-1 transition-colors">
+                            {{ trans('admin.users.delete') }}
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# ── Edit user modal ────────────────────────────────────────────── #}
+<div x-show="visible" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="closeModal()"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+    <div class="relative z-10 w-full max-w-lg bg-[var(--color-surface)]
+                border border-[var(--color-border)] rounded-2xl shadow-2xl"
+         x-transition>
+
+        {# ── Header ───────────────────────────────────────── #}
+        <div class="flex items-center justify-between px-6 pt-6 pb-5
+                    border-b border-[var(--color-border)]">
+            <h2 class="text-lg font-bold text-[var(--color-text)]">
+                {{ trans('admin.users.edit_title') }}
+                <span class="text-[var(--color-accent)]" x-text="originalUsername"></span>
+            </h2>
+            <button @click="closeModal()" class="text-[var(--color-muted)] hover:text-[var(--color-text)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        {# ── Form body ────────────────────────────────────── #}
+        <div class="px-6 py-5 space-y-4">
+
+            {# Username + Email #}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label">{{ trans('admin.users.username') }}</label>
+                    <input type="text" x-model="username" class="form-input" autocomplete="off">
+                </div>
+                <div>
+                    <label class="form-label">{{ trans('admin.users.email') }}</label>
+                    <input type="email" x-model="email" class="form-input" autocomplete="off">
+                </div>
+            </div>
+
+            {# Role + Access #}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="form-label">{{ trans('admin.users.role') }}</label>
+                    <select x-model="role" :disabled="isSelf" class="form-input">
+                        <option value="user">{{ trans('admin.users.roles.user') }}</option>
+                        <option value="admin">{{ trans('admin.users.roles.admin') }}</option>
+                    </select>
+                    <template x-if="isSelf">
+                        <p class="mt-1 text-xs text-[var(--color-muted)]">
+                            {{ trans('admin.users.self_role_hint') }}
+                        </p>
+                    </template>
+                </div>
+                <div>
+                    <label class="form-label">{{ trans('admin.users.access') }}</label>
+                    <select x-model="access" class="form-input">
+                        <option value="both">{{ trans('admin.users.access_types.both') }}</option>
+                        <option value="movies">{{ trans('admin.users.access_types.movies') }}</option>
+                        <option value="shows">{{ trans('admin.users.access_types.shows') }}</option>
+                    </select>
+                </div>
+            </div>
+
+            {# Error + Save row #}
+            <template x-if="saveError !== ''">
+                <p class="text-sm text-red-400" x-text="saveError"></p>
+            </template>
+            <div class="flex items-center justify-end gap-3">
+                <span x-show="saved" x-cloak
+                      class="text-sm text-green-400 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    {{ trans('admin.users.saved') }}
+                </span>
+                <button @click="saveSettings()" :disabled="saving"
+                        class="btn-primary text-sm flex items-center gap-2">
+                    <svg x-show="saving" class="animate-spin w-4 h-4"
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    {{ trans('admin.users.save') }}
+                </button>
+            </div>
+
+        </div>
+
+        {# ── Password reset ────────────────────────────────── #}
+        <div class="border-t border-[var(--color-border)] px-6 py-5 space-y-3">
+
+            <p class="text-xs font-semibold uppercase tracking-widest text-[var(--color-muted)]">
+                {{ trans('admin.users.reset_password.button') }}
+            </p>
+
+            {# Before reset — confirm button #}
+            <template x-if="pwdPassword === ''">
+                <div>
+                    <template x-if="pwdError !== ''">
+                        <p class="text-sm text-red-400 mb-3" x-text="pwdError"></p>
+                    </template>
+                    <button @click="doResetPassword()" :disabled="pwdLoading || isSelf"
+                            class="btn-ghost text-sm flex items-center gap-2">
+                        <svg x-show="pwdLoading" class="animate-spin w-4 h-4"
+                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10"
+                                    stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                        </svg>
+                        {{ trans('admin.users.reset_password.button') }}
+                    </button>
+                    <template x-if="isSelf">
+                        <p class="mt-2 text-xs text-[var(--color-muted)]">
+                            {{ trans('admin.users.reset_password.self_error') }}
+                        </p>
+                    </template>
+                </div>
+            </template>
+
+            {# After reset — password display + optional email #}
+            <template x-if="pwdPassword !== ''">
+                <div class="space-y-3">
+                    <p class="text-sm text-[var(--color-muted)]">
+                        {{ trans('admin.users.reset_password.modal_intro') }}
+                        <strong class="text-[var(--color-text)]"
+                                x-text="originalUsername"></strong>.
+                    </p>
+
+                    {# Password box + copy #}
+                    <div class="flex items-center gap-2 bg-[var(--color-surface-alt)]
+                                border border-[var(--color-border)] rounded-xl px-4 py-3">
+                        <code class="flex-1 text-base font-mono tracking-widest text-[var(--color-text)]"
+                              x-text="pwdPassword"></code>
+                        <button @click="copyPassword()"
+                                class="text-xs flex items-center gap-1.5 text-[var(--color-muted)]
+                                       hover:text-[var(--color-text)] transition-colors shrink-0">
+                            <svg x-show="!pwdCopied" class="w-4 h-4" fill="none"
+                                 stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            <svg x-show="pwdCopied" x-cloak
+                                 class="w-4 h-4 text-green-400" fill="none"
+                                 stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <span x-text="pwdCopied
+                                ? '{{ trans('admin.users.reset_password.copied') }}'
+                                : '{{ trans('admin.users.reset_password.copy') }}'"></span>
+                        </button>
+                    </div>
+
+                    <template x-if="pwdEmailSent">
+                        <p class="text-sm text-green-400 flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            {{ trans('admin.users.reset_password.email_sent') }}
+                        </p>
+                    </template>
+                    <template x-if="pwdEmailError !== ''">
+                        <p class="text-sm text-red-400" x-text="pwdEmailError"></p>
+                    </template>
+                    <template x-if="!pwdHasEmail && !pwdEmailSent && !pwdSmtpReady">
+                        <p class="text-sm text-[var(--color-muted)]">
+                            {{ trans('admin.users.reset_password.no_smtp') }}
+                        </p>
+                    </template>
+                    <template x-if="!pwdHasEmail && !pwdEmailSent && pwdSmtpReady">
+                        <p class="text-sm text-[var(--color-muted)]">
+                            {{ trans('admin.users.reset_password.no_email') }}
+                        </p>
+                    </template>
+                    <template x-if="pwdHasEmail && !pwdEmailSent">
+                        <button @click="sendPasswordEmail()" :disabled="pwdEmailLoading"
+                                class="btn-ghost text-sm flex items-center gap-2">
+                            <svg x-show="pwdEmailLoading" class="animate-spin w-4 h-4"
+                                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                            </svg>
+                            {{ trans('admin.users.reset_password.send_email') }}
+                        </button>
+                    </template>
+                </div>
+            </template>
+
+        </div>
+
+        {# ── Footer ───────────────────────────────────────── #}
+        <div class="flex justify-end px-6 pb-5">
+            <button @click="closeModal()" class="btn-ghost text-sm">
+                {{ trans('admin.users.close') }}
+            </button>
+        </div>
+
+    </div>
+    </div>
+</div>
+
+</div>{# end x-data="editUserModal()" #}
+
+{# ── Create user modal ─────────────────────────────────────────── #}
+{# Kept as its own component — state is a simple boolean flag.     #}
+<div x-data="{ open: false }"
+     @open-create-modal.window="open = true"
+     @keydown.escape.window="open = false">
+
+    <div x-show="open" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" @click="open = false"></div>
+        <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative z-10 w-full max-w-md bg-[var(--color-surface)]
+                    border border-[var(--color-border)] rounded-2xl shadow-2xl p-6"
+             x-transition>
+
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-lg font-bold text-[var(--color-text)]">
+                    {{ trans('admin.users.create') }}
+                </h2>
+                <button @click="open = false" class="text-[var(--color-muted)] hover:text-[var(--color-text)]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form method="post" action="{{ url('/admin/users') }}" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <div>
+                    <label class="form-label">{{ trans('admin.users.username') }}</label>
+                    <input type="text" name="username" class="form-input" required autofocus>
+                </div>
+                <div>
+                    <label class="form-label">{{ trans('admin.users.email') }}</label>
+                    <input type="email" name="email" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">{{ trans('auth.login.password') }}</label>
+                    <input type="password" name="password" class="form-input" required minlength="8">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label">{{ trans('admin.users.role') }}</label>
+                        <select name="role" class="form-input">
+                            <option value="user">{{ trans('admin.users.roles.user') }}</option>
+                            <option value="admin">{{ trans('admin.users.roles.admin') }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">{{ trans('admin.users.access') }}</label>
+                        <select name="content_access" class="form-input">
+                            <option value="both">{{ trans('admin.users.access_types.both') }}</option>
+                            <option value="movies">{{ trans('admin.users.access_types.movies') }}</option>
+                            <option value="shows">{{ trans('admin.users.access_types.shows') }}</option>
+                        </select>
+                    </div>
+                </div>
+                {% if smtpConfigured %}
+                <div>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="send_invitation" value="1"
+                               class="w-4 h-4 rounded accent-[var(--color-accent)]">
+                        <span class="text-sm text-[var(--color-text)]">
+                            {{ trans('admin.users.send_invitation') }}
+                        </span>
+                    </label>
+                </div>
+                {% endif %}
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @click="open = false" class="btn-ghost">
+                        {{ trans('admin.users.cancel') }}
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        {{ trans('admin.users.create') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{# editUserModal is registered in resources/app.js via Alpine.data() #}

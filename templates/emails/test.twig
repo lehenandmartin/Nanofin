@@ -1,0 +1,8 @@
+{% extends 'emails/base.twig' %}
+
+{% block subject %}{{ trans('email.test.subject', {'site': siteName}) }}{% endblock %}
+
+{% block body %}
+<p>{{ trans('email.test.intro', {'site': siteName})|raw }}</p>
+<p>{{ trans('email.test.success') }}</p>
+{% endblock %}

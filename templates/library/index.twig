@@ -1,0 +1,200 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}{{ trans('library.title') }} — {{ settings.site_title ?? 'Nanofin' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+     x-data="libraryPage">
+
+    {# ── Toolbar ──────────────────────────────────────────────── #}
+    <div class="flex flex-wrap items-center gap-3 mb-6">
+
+        {# Search #}
+        <div class="relative flex-1 min-w-48">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] pointer-events-none"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+            </svg>
+            <input type="search"
+                   x-model="search"
+                   placeholder="{{ trans('library.search') }}"
+                   class="form-input pl-9 pr-4"
+                   @input.debounce.400ms="doSearch()"
+                   @search="doSearch()">
+        </div>
+
+        {# Type filter — hidden when user only has access to one type #}
+        {% if allowedTypes|length > 1 %}
+        <div class="flex gap-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg p-1">
+            {% set typeFilters = [
+                {key: 'all',   label: trans('library.all')},
+                {key: 'movie', label: trans('library.movies')},
+                {key: 'show',  label: trans('library.shows')},
+            ] %}
+            {% for f in typeFilters %}
+            {% if f.key in allowedTypes %}
+            <a href="?type={{ f.key }}&sort={{ sort }}{% if order %}&order={{ order }}{% endif %}{% if search %}&q={{ search|url_encode }}{% endif %}"
+               class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors
+                      {% if type == f.key %}bg-[var(--color-accent)] text-white
+                      {% else %}text-[var(--color-muted)] hover:text-[var(--color-text)]{% endif %}">
+                {{ f.label }}
+            </a>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {# Sort dropdown #}
+        <div class="relative" x-data="{ open: false }">
+            <button @click="open = !open" @click.outside="open = false"
+                    class="btn-ghost text-sm gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M3 4h13M3 8h9M3 12h5"/>
+                </svg>
+                {% set sortLabels = {
+                    title:  trans('library.sort.title'),
+                    year:   trans('library.sort.year'),
+                    added:  trans('library.sort.added'),
+                    rating: trans('library.sort.rating')
+                } %}
+                {{ sortLabels[sort] ?? trans('library.sort.label') }}
+                {# Direction arrow on the active sort button #}
+                {% if effectiveDir == 'asc' %}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                </svg>
+                {% else %}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+                {% endif %}
+            </button>
+            <div x-show="open" x-transition x-cloak
+                 class="absolute right-0 mt-2 w-44 bg-[var(--color-surface)] border border-[var(--color-border)]
+                        rounded-xl shadow-xl z-10 overflow-hidden">
+                {% set sorts = {
+                    title:  trans('library.sort.title'),
+                    year:   trans('library.sort.year'),
+                    added:  trans('library.sort.added'),
+                    rating: trans('library.sort.rating')
+                } %}
+                {% for key, label in sorts %}
+                {# Active sort: clicking it toggles the direction. Inactive: use default (no order param). #}
+                {% if sort == key %}
+                    {% set nextOrder = effectiveDir == 'asc' ? 'desc' : 'asc' %}
+                    {% set sortHref = '?type=' ~ type ~ '&sort=' ~ key ~ '&order=' ~ nextOrder ~ (search ? '&q=' ~ search|url_encode : '') %}
+                {% else %}
+                    {% set sortHref = '?type=' ~ type ~ '&sort=' ~ key ~ (search ? '&q=' ~ search|url_encode : '') %}
+                {% endif %}
+                <a href="{{ sortHref }}"
+                   class="flex items-center justify-between px-4 py-2.5 text-sm hover:bg-[var(--color-surface-alt)]
+                          {% if sort == key %}text-[var(--color-accent)]{% else %}text-[var(--color-text)]{% endif %}">
+                    {{ label }}
+                    {% if sort == key %}
+                    {# Show current direction; clicking will reverse it #}
+                    {% if effectiveDir == 'asc' %}
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                    {% endif %}
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Error banner ─────────────────────────────────────────── #}
+    {% if error is defined and error %}
+    <div class="mb-6 px-4 py-3 rounded-lg bg-red-600/15 border border-red-500/30 text-red-400 text-sm">
+        <strong>{{ trans('error.server_error') }}:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    {# ── Results count ────────────────────────────────────────── #}
+    {% if items is defined and items|length > 0 %}
+    <p class="text-sm text-[var(--color-muted)] mb-4" id="results-count">
+        {{ items|length }} / {{ total }} {{ trans('library.pagination.items') }}
+    </p>
+    {% endif %}
+
+    {# ── Grid ─────────────────────────────────────────────────── #}
+    {% if items is not defined or items|length == 0 %}
+    <div class="py-24 text-center text-[var(--color-muted)]">
+        {% if search is defined and search %}
+            {{ trans('library.no_results') }}
+        {% else %}
+            {{ trans('library.empty') }}
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+         id="library-grid" data-grid-rows="{{ rows ?? 4 }}">
+        {% for item in items %}
+        <article class="card group" data-title="{{ item.Name|lower }}"
+                 style="opacity:0;animation:fadeInUp .22s ease forwards;animation-delay:{{ min(loop.index0 * 22, 350) }}ms">
+            <a href="{{ url(item.detailUrl) }}" class="block">
+                <img src="{{ url(item.posterUrl) }}"
+                     alt="{{ item.Name }}"
+                     class="card-img bg-[var(--color-surface-alt)]"
+                     loading="lazy"
+                     data-fallback="poster">
+                <div class="p-3">
+                    <h2 class="text-sm font-semibold text-[var(--color-text)] truncate leading-snug mb-1">
+                        {{ item.Name }}
+                    </h2>
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="text-xs text-[var(--color-muted)]">{{ item.year ?? '' }}</span>
+                        <span class="{{ item.isSeries ? 'badge-show' : 'badge-movie' }}">
+                            {{ item.isSeries ? trans('library.show') : trans('library.movie') }}
+                        </span>
+                    </div>
+                    {% if item.rating > 0 %}
+                    <div class="flex items-center gap-1 mt-1.5">
+                        <svg class="w-3 h-3 text-yellow-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                        <span class="text-xs text-[var(--color-muted)]">{{ item.rating }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+
+    {% endif %}
+
+    {# ── Pagination ───────────────────────────────────────────── #}
+    {% if pages is defined and pages > 1 %}
+    <nav class="flex items-center justify-center gap-2 mt-10" aria-label="Pagination">
+        {% if page > 1 %}
+        <a href="?type={{ type }}&sort={{ sort }}{% if order %}&order={{ order }}{% endif %}&page={{ page - 1 }}{% if search %}&q={{ search|url_encode }}{% endif %}"
+           class="btn-ghost text-sm">
+            ← {{ trans('library.pagination.previous') }}
+        </a>
+        {% endif %}
+
+        <span class="text-sm text-[var(--color-muted)] px-2">
+            {{ page }} / {{ pages }}
+        </span>
+
+        {% if page < pages %}
+        <a href="?type={{ type }}&sort={{ sort }}{% if order %}&order={{ order }}{% endif %}&page={{ page + 1 }}{% if search %}&q={{ search|url_encode }}{% endif %}"
+           class="btn-ghost text-sm">
+            {{ trans('library.pagination.next') }} →
+        </a>
+        {% endif %}
+    </nav>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{# libraryPage, buildSkeleton, trimGrid are registered in resources/app.js #}

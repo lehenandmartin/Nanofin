@@ -1,0 +1,144 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}{{ trans('auth.login.title') }} — {{ settings.site_title ?? 'Nanofin' }}{% endblock %}
+
+{% block head %}
+{# Phase and identifier read by the loginPage Alpine component #}
+<meta name="login-phase"      content="{{ loginPhase      ?? 'identifier' }}">
+<meta name="login-identifier" content="{{ loginIdentifier ?? '' }}">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-sm">
+
+        {# Logo / app name #}
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-[var(--color-text)] mb-1">
+                {{ settings.site_title ?? 'Nanofin' }}
+            </h1>
+            <p class="text-[var(--color-muted)] text-sm">{{ trans('auth.login.title') }}</p>
+        </div>
+
+        {# Card — Alpine component manages the three phases #}
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-8 shadow-2xl"
+             x-data="loginPage">
+
+            {# ── Error banner (AJAX or server-side) ──────────────── #}
+            <template x-if="error">
+                <div class="mb-5 px-4 py-3 rounded-lg bg-red-600/15 border border-red-500/30 text-red-400 text-sm"
+                     x-text="error"></div>
+            </template>
+            {% if error is defined and error %}
+            <div class="mb-5 px-4 py-3 rounded-lg bg-red-600/15 border border-red-500/30 text-red-400 text-sm"
+                 x-show="phase === 'password'">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            {# ── Phase 1 : identifier ─────────────────────────────── #}
+            <div x-show="phase === 'identifier'">
+                <form @submit.prevent="submitIdentifier" novalidate>
+                    <div class="mb-6">
+                        <label for="login-identifier" class="form-label">
+                            {{ trans('auth.magic_link.identifier') }}
+                        </label>
+                        <input
+                            id="login-identifier"
+                            type="text"
+                            class="form-input"
+                            autocomplete="username"
+                            required
+                            autofocus
+                            x-model="identifier"
+                            x-ref="identifierInput"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn-primary w-full justify-center" :disabled="loading">
+                        <span x-show="!loading">{{ trans('auth.magic_link.continue') }}</span>
+                        <span x-show="loading" x-cloak>
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                </form>
+            </div>
+
+            {# ── Phase 2 : password ───────────────────────────────── #}
+            <div x-show="phase === 'password'" x-cloak>
+                <form method="post" action="{{ url('/login') }}" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="identifier" :value="identifier">
+                    {% if next is defined and next %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                    {% endif %}
+
+                    {# Identifier recap (read-only) #}
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="form-label mb-0">
+                                {{ trans('auth.magic_link.identifier') }}
+                            </span>
+                            <button type="button"
+                                    @click="changeIdentifier()"
+                                    class="text-xs text-[var(--color-muted)] hover:text-[var(--color-text)] transition-colors">
+                                {{ trans('auth.magic_link.change_identifier') }}
+                            </button>
+                        </div>
+                        <div class="form-input text-[var(--color-muted)] cursor-default select-none"
+                             x-text="identifier"></div>
+                    </div>
+
+                    {# Password #}
+                    <div class="mb-6">
+                        <label for="password" class="form-label">{{ trans('auth.login.password') }}</label>
+                        <input
+                            id="password"
+                            type="password"
+                            name="password"
+                            class="form-input"
+                            autocomplete="current-password"
+                            required
+                            x-ref="passwordInput"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn-primary w-full justify-center">
+                        {{ trans('auth.login.submit') }}
+                    </button>
+                </form>
+
+                {% if forgotPasswordEnabled %}
+                <p class="text-center mt-5 text-sm text-[var(--color-muted)]">
+                    <a href="{{ url('/forgot-password') }}"
+                       class="hover:text-[var(--color-text)] transition-colors">
+                        {{ trans('auth.forgot_password.link') }}
+                    </a>
+                </p>
+                {% endif %}
+            </div>
+
+            {# ── Phase 3 : magic link sent ────────────────────────── #}
+            <div x-show="phase === 'magic_sent'" x-cloak>
+                <div class="mb-5 px-4 py-3 rounded-lg bg-[var(--color-surface-alt)]
+                            border border-[var(--color-border)] text-sm text-[var(--color-text)]">
+                    <p class="font-semibold mb-1">{{ trans('auth.magic_link.sent') }}</p>
+                    <p class="text-[var(--color-muted)]">{{ trans('auth.magic_link.sent_detail') }}</p>
+                </div>
+
+                <button type="button"
+                        @click="usePasswordInstead()"
+                        class="btn-ghost w-full justify-center text-sm">
+                    {{ trans('auth.magic_link.use_password') }}
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}{{ trans('footer.powered_by') }} <a href="{{ app_github_url }}" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--color-text)] transition-colors">Nanofin</a>{% endblock %}

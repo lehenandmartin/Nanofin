@@ -1,0 +1,27 @@
+# Dependencies
+vendor/
+node_modules/
+
+# Runtime data — ignore contents but keep the .htaccess protection files
+data/*
+!data/.htaccess
+cache/posters/
+cache/user_id
+cache/twig/
+
+# Environment
+.env
+
+# Claude Code (local only — not committed)
+CLAUDE.md
+.claude/
+
+# OS artefacts
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace

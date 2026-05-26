@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, mbstring, openssl
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build frontend assets
+        run: npm ci && npm run build
+
+      - name: Create release archive
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          ARCHIVE="nanofin-${VERSION}.zip"
+
+          zip -r "${ARCHIVE}" . \
+            --exclude "*.git*" \
+            --exclude "*/.git/*" \
+            --exclude "node_modules/*" \
+            --exclude "resources/*" \
+            --exclude "package.json" \
+            --exclude "package-lock.json" \
+            --exclude "vite.config.js" \
+            --exclude ".env" \
+            --exclude "CLAUDE.md" \
+            --exclude ".claude/*" \
+            --exclude "data/nanofin.db" \
+            --exclude "cache/posters/*" \
+            --exclude "cache/user_id" \
+            --exclude "cache/twig/*"
+
+          echo "ARCHIVE=${ARCHIVE}" >> "$GITHUB_ENV"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ARCHIVE }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true

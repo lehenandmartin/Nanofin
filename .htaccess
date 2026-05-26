@@ -1,0 +1,28 @@
+# Nanofin — root-level router.
+#
+# Forwards all HTTP traffic to the public/ directory so Apache can be
+# pointed at the project root instead of public/.
+#
+# This means:
+#   • Shared hosting  → upload the whole project to public_html/ (or a subfolder of it)
+#   • VPS/Alias       → Alias /nanofin /var/www/nanofin   (no /public suffix needed)
+#   • DocumentRoot    → DocumentRoot /var/www/nanofin     (no /public suffix needed)
+
+Options -Indexes
+
+RewriteEngine On
+
+# Block Git metadata (prevents source code leak)
+RewriteRule ^\.git(\/|$) - [F,L]
+
+# Block direct HTTP access to sensitive directories (returns 403)
+RewriteRule ^(src|data|cache|config|translations|templates|vendor)(\/|$) - [F,L]
+
+# Block direct access to sensitive root files
+RewriteRule ^(\.env|migrate\.php|composer\.(json|lock)|package(-lock)?\.json|vite\.config\.js|CLAUDE\.md)(\/|$) - [F,L]
+
+# Requests already targeting public/ — pass through to avoid an infinite loop
+RewriteRule ^public\/ - [L]
+
+# Forward everything else into public/
+RewriteRule ^(.*)$ public/$1 [L]

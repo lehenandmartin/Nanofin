@@ -1,0 +1,88 @@
+{% extends 'layouts/base.twig' %}
+
+{% block title %}{{ trans('auth.first_login.title') }} — {{ settings.site_title ?? 'Nanofin' }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-sm">
+
+        {# Logo / app name #}
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-[var(--color-text)] mb-1">
+                {{ settings.site_title ?? 'Nanofin' }}
+            </h1>
+            <p class="text-[var(--color-muted)] text-sm">{{ trans('auth.first_login.title') }}</p>
+        </div>
+
+        {# Card #}
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-8 shadow-2xl">
+
+            {# Info banner #}
+            <div class="mb-5 px-4 py-3 rounded-lg bg-[var(--color-surface-alt)] border border-[var(--color-border)] text-sm text-[var(--color-muted)]">
+                {{ trans('auth.first_login.intro') }}
+            </div>
+
+            {# Error banner #}
+            {% if error is defined and error %}
+            <div class="mb-5 px-4 py-3 rounded-lg bg-red-600/15 border border-red-500/30 text-red-400 text-sm">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" action="{{ url('/first-login') }}" novalidate
+                  x-data="{ loading: false }" @submit="loading = true">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                {# New password #}
+                <div class="mb-4">
+                    <label for="new_password" class="form-label">
+                        {{ trans('auth.first_login.new') }}
+                    </label>
+                    <input
+                        id="new_password"
+                        type="password"
+                        name="new_password"
+                        class="form-input"
+                        autocomplete="new-password"
+                        required
+                        autofocus
+                    >
+                </div>
+
+                {# Confirm password #}
+                <div class="mb-6">
+                    <label for="confirm_password" class="form-label">
+                        {{ trans('auth.first_login.confirm') }}
+                    </label>
+                    <input
+                        id="confirm_password"
+                        type="password"
+                        name="confirm_password"
+                        class="form-input"
+                        autocomplete="new-password"
+                        required
+                    >
+                </div>
+
+                {# Submit #}
+                <button
+                    type="submit"
+                    class="btn-primary w-full justify-center"
+                    :disabled="loading"
+                >
+                    <span x-show="!loading">{{ trans('auth.first_login.submit') }}</span>
+                    <span x-show="loading" x-cloak>
+                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                    </span>
+                </button>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}{{ trans('footer.powered_by') }} <a href="{{ app_github_url }}" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--color-text)] transition-colors">Nanofin</a>{% endblock %}

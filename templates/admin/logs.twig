@@ -1,0 +1,106 @@
+{% extends 'layouts/admin.twig' %}
+
+{% block title %}{{ trans('admin.logs.title') }} — {{ trans('admin.title') }}{% endblock %}
+
+{% block admin_content %}
+
+<div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <h1 class="text-2xl font-black text-[var(--color-text)]">
+        {{ trans('admin.logs.title') }}
+        {% if total > 0 %}
+        <span class="text-base font-normal text-[var(--color-muted)]">({{ total }})</span>
+        {% endif %}
+    </h1>
+
+    <div class="flex items-center gap-2">
+        {# Filter by user #}
+        <form method="get" action="{{ url('/admin/logs') }}">
+            <select name="user" onchange="this.form.submit()"
+                    class="text-sm bg-[var(--color-surface)] border border-[var(--color-border)]
+                           rounded-lg px-3 py-1.5 text-[var(--color-text)] cursor-pointer">
+                <option value="">{{ trans('admin.logs.user') }}: All</option>
+                {% for u in allUsers %}
+                <option value="{{ u.id }}"
+                        {% if filterUser == u.id %}selected{% endif %}>
+                    {{ u.username }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+
+        {# Clear all #}
+        {% if total > 0 %}
+        <form method="post" action="{{ url('/admin/logs/clear') }}"
+              x-data
+              @submit.prevent="if(confirm('{{ trans('admin.logs.clear_confirm')|e('js') }}')) $el.submit()">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit"
+                    class="btn-ghost text-sm text-red-400 border-red-500/30 hover:bg-red-500/10">
+                {{ trans('admin.logs.clear') }}
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if logs|length == 0 %}
+<div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl
+            px-5 py-12 text-center text-[var(--color-muted)]">
+    {{ trans('admin.logs.empty') }}
+</div>
+{% else %}
+<div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+    <table class="w-full text-sm">
+        <thead>
+            <tr class="text-xs uppercase tracking-widest text-[var(--color-muted)]
+                       border-b border-[var(--color-border)]">
+                <th class="px-5 py-3 text-left">{{ trans('admin.logs.item') }}</th>
+                {% if not filterUser %}
+                <th class="px-5 py-3 text-left">{{ trans('admin.logs.user') }}</th>
+                {% endif %}
+                <th class="px-5 py-3 text-left hidden md:table-cell">{{ trans('admin.logs.type') }}</th>
+                <th class="px-5 py-3 text-left">{{ trans('admin.logs.date') }}</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--color-border)]">
+        {% for log in logs %}
+        <tr class="hover:bg-[var(--color-surface-alt)]">
+            <td class="px-5 py-3 font-medium text-[var(--color-text)] max-w-xs truncate">
+                {{ log.item_title }}
+            </td>
+            {% if not filterUser %}
+            <td class="px-5 py-3 text-[var(--color-muted)]">
+                {{ log.username ?? '<em class="not-italic text-orange-400">public</em>'|raw }}
+            </td>
+            {% endif %}
+            <td class="px-5 py-3 hidden md:table-cell">
+                <span class="{{ log.item_type == 'movie' ? 'badge-movie' : 'badge-show' }}">
+                    {{ trans('admin.logs.type_' ~ log.item_type) }}
+                </span>
+            </td>
+            <td class="px-5 py-3 text-[var(--color-muted)] text-xs whitespace-nowrap">
+                {{ log.downloaded_at }}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# Pagination #}
+{% if pages > 1 %}
+<nav class="flex items-center justify-center gap-2 mt-6">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}{% if filterUser %}&user={{ filterUser }}{% endif %}"
+       class="btn-ghost text-sm">← {{ trans('library.pagination.previous') }}</a>
+    {% endif %}
+    <span class="text-sm text-[var(--color-muted)]">{{ page }} / {{ pages }}</span>
+    {% if page < pages %}
+    <a href="?page={{ page + 1 }}{% if filterUser %}&user={{ filterUser }}{% endif %}"
+       class="btn-ghost text-sm">{{ trans('library.pagination.next') }} →</a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endif %}
+
+{% endblock %}
