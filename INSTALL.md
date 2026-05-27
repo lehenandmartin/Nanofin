@@ -13,8 +13,6 @@
 - [CLI tools](#cli-tools)
 - [Troubleshooting](#troubleshooting)
 
----
-
 ## Requirements
 
 | Component | Minimum |
@@ -27,8 +25,6 @@
 | Node / npm | **Dev only** — not required on the server |
 
 The setup wizard checks all requirements before you fill in any form.
-
----
 
 ## Getting the files
 
@@ -49,8 +45,6 @@ composer install --no-dev --optimize-autoloader
 ```
 
 Node/npm is only needed if you plan to modify the frontend assets.
-
----
 
 ## Option A — Shared hosting (FTP)
 
@@ -122,8 +116,6 @@ Most shared hosts already grant write access via FTP.
 ### 4. Open the setup wizard
 
 Navigate to your URL — Nanofin redirects to the setup wizard automatically.
-
----
 
 ## Option B — VPS / server
 
@@ -212,8 +204,6 @@ RewriteBase /nanofin/
 
 Navigate to your URL — the wizard starts automatically.
 
----
-
 ## Option C — Local development
 
 ### 1. Clone and install dependencies
@@ -260,8 +250,6 @@ Or configure a local Apache vhost pointing at the project root with `AllowOverri
 
 Navigate to `http://localhost:8080` — the wizard starts automatically.
 
----
-
 ## First-run setup wizard
 
 On the very first request Nanofin detects that no admin account exists and
@@ -278,8 +266,6 @@ The `/setup` route is permanently disabled once an admin account exists.
 ### Getting a Jellyfin API key
 
 In Jellyfin: **Administration → Dashboard → API Keys → + (New key)**
-
----
 
 ## Email features (optional)
 
@@ -312,8 +298,6 @@ Any standard SMTP provider works: Gmail (App Password), Brevo, Mailgun,
 Postmark, Amazon SES, or a self-hosted server. PHPMailer handles TLS/STARTTLS
 automatically based on the port (587 → STARTTLS, 465 → SSL/TLS).
 
----
-
 ## Updating
 
 1. Replace the project files (FTP upload or `git pull`).
@@ -322,8 +306,6 @@ automatically based on the port (587 → STARTTLS, 465 → SSL/TLS).
    automatically on the next request.
 4. If you modified `public/.htaccess` for a subfolder install, verify your
    `RewriteBase` setting is preserved after the update.
-
----
 
 ## CLI tools
 
@@ -340,8 +322,6 @@ php migrate.php
 # WARNING: destroys all data including users and settings
 php migrate.php --fresh
 ```
-
----
 
 ## Troubleshooting
 
