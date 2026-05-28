@@ -8,6 +8,10 @@
   <img src="https://img.shields.io/github/actions/workflow/status/lehenandmartin/Nanofin/release.yml?label=build" alt="Build">
 </p>
 
+<p align="center">
+<img width="1920" height="1220" alt="Library" src="https://github.com/user-attachments/assets/6cf4c5e5-203a-4a8f-83c0-f095c6e2a3a1" />
+</p>
+
 ---
 
 Browse movies and TV shows from your Jellyfin library, and download them directly — no Jellyfin account needed, no streaming, no transcoding.
@@ -41,7 +45,6 @@ Browse movies and TV shows from your Jellyfin library, and download them directl
 ## Screenshots
 
 <p align="center">
-<img width="1920" height="1220" alt="Library" src="https://github.com/user-attachments/assets/6cf4c5e5-203a-4a8f-83c0-f095c6e2a3a1" />
 <img width="1920" height="991" alt="Movie" src="https://github.com/user-attachments/assets/eef006cf-33eb-4c7d-939e-7eeb0dfd1ced" />
 <img width="1920" height="1220" alt="TV Show" src="https://github.com/user-attachments/assets/9fe5e342-5fc9-4ef4-bae9-2af4e887a5f8" />
 </p>
