@@ -190,7 +190,16 @@ return [
             'allow_password_reset'      => 'Autoriser les utilisateurs à réinitialiser leur mot de passe par e-mail',
             'allow_password_reset_hint' => 'Nécessite que le SMTP soit configuré.',
             'allow_magic_link'          => 'Autoriser la connexion par lien magique (e-mail sans mot de passe)',
-            'allow_magic_link_hint'     => 'Nécessite que le SMTP soit configuré. Fonctionne uniquement pour les utilisateurs ayant une adresse e-mail enregistrée.',
+            'allow_magic_link_hint'       => 'Nécessite que le SMTP soit configuré.',
+            'allow_magic_link_hint_users' => 'Fonctionne uniquement pour les utilisateurs ayant une adresse e-mail enregistrée.',
+            'discord'                       => 'Discord',
+            'discord_webhook_url'           => 'URL du webhook',
+            'discord_webhook_url_placeholder' => 'https://discord.com/api/webhooks/…',
+            'discord_notify_downloads'      => 'Publier un message à chaque téléchargement',
+            'discord_test_title'            => 'Envoyer un message de test',
+            'discord_test_notice'           => 'Enregistrez l\'URL du webhook avant d\'envoyer un test.',
+            'discord_test_send'             => 'Envoyer le test',
+            'discord_test_sent'             => 'Message de test envoyé sur Discord.',
             'save'               => 'Enregistrer',
             'saved'              => 'Paramètres enregistrés.',
         ],
@@ -334,6 +343,14 @@ return [
             'intro'   => 'Ceci est un e-mail de test envoyé depuis <strong>:site</strong>.',
             'success' => 'Si vous avez reçu ce message, votre configuration SMTP fonctionne correctement.',
         ],
+    ],
+
+    // ── Discord notifications ────────────────────────────────────
+    'discord' => [
+        'download_message' => '**:user** a téléchargé **:title** (:type)',
+        'anonymous'        => 'Anonyme',
+        'type_movie'       => 'film',
+        'type_episode'     => 'épisode',
     ],
 
     // ── Download ──────────────────────────────────────────────────

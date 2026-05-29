@@ -111,7 +111,7 @@
                     <input id="email" type="email" name="email"
                            class="form-input {% if errors.email is defined %}ring-2 ring-red-500{% endif %}"
                            value="{{ old.email ?? '' }}"
-                           autocomplete="email" required>
+                           autocomplete="email">
                     {% if errors.email is defined %}
                     <p class="mt-1 text-xs text-red-400">{{ errors.email }}</p>
                     {% endif %}

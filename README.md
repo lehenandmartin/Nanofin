@@ -33,9 +33,10 @@ Browse movies and TV shows from your Jellyfin library, and download them directl
 - Login rate limiting (5 failures / IP / 15 min)
 
 ### Admin panel
-- Download logs with per-user filtering
 - User management: create, edit, delete; invite by email; reset passwords
 - Settings: Jellyfin connection, SMTP, grid size, and more
+- Download logs with per-user filtering
+- Discord webhook notifications — post a message to a channel on each download
 
 ### Deployment
 - Runs on shared Apache hosting (FTP upload)

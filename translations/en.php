@@ -190,7 +190,16 @@ return [
             'allow_password_reset'      => 'Allow users to reset their own password by email',
             'allow_password_reset_hint' => 'Requires SMTP to be configured.',
             'allow_magic_link'          => 'Allow sign-in by magic link (passwordless email)',
-            'allow_magic_link_hint'     => 'Requires SMTP to be configured. Only works for users with a registered email address.',
+            'allow_magic_link_hint'       => 'Requires SMTP to be configured.',
+            'allow_magic_link_hint_users' => 'Only works for users with a registered email address.',
+            'discord'                       => 'Discord',
+            'discord_webhook_url'           => 'Webhook URL',
+            'discord_webhook_url_placeholder' => 'https://discord.com/api/webhooks/…',
+            'discord_notify_downloads'      => 'Post a message on each download',
+            'discord_test_title'            => 'Send a test message',
+            'discord_test_notice'           => 'Save your webhook URL before sending a test.',
+            'discord_test_send'             => 'Send test',
+            'discord_test_sent'             => 'Test message sent to Discord.',
             'save'               => 'Save settings',
             'saved'              => 'Settings saved.',
         ],
@@ -334,6 +343,14 @@ return [
             'intro'   => 'This is a test email sent from <strong>:site</strong>.',
             'success' => 'If you received this message, your SMTP configuration is working correctly.',
         ],
+    ],
+
+    // ── Discord notifications ────────────────────────────────────
+    'discord' => [
+        'download_message' => '**:user** downloaded **:title** (:type)',
+        'anonymous'        => 'Anonymous',
+        'type_movie'       => 'movie',
+        'type_episode'     => 'episode',
     ],
 
     // ── Download ──────────────────────────────────────────────────

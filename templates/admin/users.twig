@@ -26,7 +26,6 @@
             <tr class="text-xs uppercase tracking-widest text-[var(--color-muted)]
                        border-b border-[var(--color-border)]">
                 <th class="px-5 py-3 text-left">{{ trans('admin.users.username') }}</th>
-                <th class="px-5 py-3 text-left hidden md:table-cell">{{ trans('admin.users.email') }}</th>
                 <th class="px-5 py-3 text-left hidden sm:table-cell">{{ trans('admin.users.role') }}</th>
                 <th class="px-5 py-3 text-left hidden lg:table-cell">{{ trans('admin.users.access') }}</th>
                 <th class="px-5 py-3 text-left hidden xl:table-cell">{{ trans('admin.users.last_activity') }}</th>
@@ -37,22 +36,18 @@
         {% for user in userList %}
         <tr class="hover:bg-[var(--color-surface-alt)]">
 
-            {# Username #}
-            <td class="px-5 py-3 font-medium text-[var(--color-text)]">
-                {{ user.username }}
-                {% if user.id == auth_user.id %}
-                <span class="ml-1 text-xs text-[var(--color-accent)]">
-                    ({{ trans('admin.users.you') }})
-                </span>
-                {% endif %}
-            </td>
-
-            {# Email #}
-            <td class="px-5 py-3 text-[var(--color-muted)] hidden md:table-cell">
+            {# Username + email #}
+            <td class="px-5 py-3">
+                <div class="font-medium text-[var(--color-text)]">
+                    {{ user.username }}
+                    {% if user.id == auth_user.id %}
+                    <span class="ml-1 text-xs text-[var(--color-accent)]">
+                        ({{ trans('admin.users.you') }})
+                    </span>
+                    {% endif %}
+                </div>
                 {% if user.email %}
-                    <span class="truncate max-w-[14rem] block">{{ user.email }}</span>
-                {% else %}
-                    <span class="text-orange-400">—</span>
+                <div class="text-xs text-[var(--color-muted)] truncate max-w-[16rem]">{{ user.email }}</div>
                 {% endif %}
             </td>
 
@@ -336,7 +331,8 @@
                 </button>
             </div>
 
-            <form method="post" action="{{ url('/admin/users') }}" class="space-y-4">
+            <form method="post" action="{{ url('/admin/users') }}" class="space-y-4"
+                  x-data="{ newEmail: '' }">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <div>
                     <label class="form-label">{{ trans('admin.users.username') }}</label>
@@ -344,7 +340,7 @@
                 </div>
                 <div>
                     <label class="form-label">{{ trans('admin.users.email') }}</label>
-                    <input type="email" name="email" class="form-input" required>
+                    <input type="email" name="email" class="form-input" x-model="newEmail">
                 </div>
                 <div>
                     <label class="form-label">{{ trans('auth.login.password') }}</label>
@@ -369,9 +365,12 @@
                 </div>
                 {% if smtpConfigured %}
                 <div>
-                    <label class="flex items-center gap-3 cursor-pointer">
+                    <label class="flex items-center gap-3"
+                           :class="newEmail ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'">
                         <input type="checkbox" name="send_invitation" value="1"
-                               class="w-4 h-4 rounded accent-[var(--color-accent)]">
+                               class="w-4 h-4 rounded accent-[var(--color-accent)]"
+                               :disabled="!newEmail"
+                               x-effect="if (!newEmail) $el.checked = false">
                         <span class="text-sm text-[var(--color-text)]">
                             {{ trans('admin.users.send_invitation') }}
                         </span>

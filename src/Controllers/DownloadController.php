@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nanofin\Controllers;
 
+use Nanofin\Core\DiscordService;
 use Nanofin\Core\JellyfinService;
 use Nanofin\Core\JellyfinStream;
 use Nanofin\Core\Translator;
@@ -22,6 +23,7 @@ final class DownloadController
         private readonly DownloadModel   $downloads,
         private readonly SettingsModel   $settings,
         private readonly Translator      $translator,
+        private readonly DiscordService  $discord,
     ) {}
 
     // ── GET /poster/{id} ──────────────────────────────────────────
@@ -109,6 +111,8 @@ final class DownloadController
             itemTitle: $displayTitle,
             itemType:  $logType,
         );
+
+        $this->discord->notifyDownload($displayTitle, $logType, $user['username'] ?? null);
 
         // ── Build download metadata from already-fetched item ───
         $meta = $this->buildMeta($item);

@@ -115,9 +115,7 @@ final class SetupController
             $errors['password'] = $t->trans('setup.validation.password_min');
         }
 
-        if ($email === '') {
-            $errors['email'] = $t->trans('setup.validation.email_required');
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = $t->trans('setup.validation.email_invalid');
         }
 

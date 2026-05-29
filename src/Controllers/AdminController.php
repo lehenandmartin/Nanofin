@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nanofin\Controllers;
 
+use Nanofin\Core\DiscordService;
 use Nanofin\Core\JellyfinService;
 use Nanofin\Core\NotificationService;
 use Nanofin\Core\Translator;
@@ -24,6 +25,7 @@ final class AdminController
         private readonly JellyfinService     $jellyfin,
         private readonly Translator          $translator,
         private readonly NotificationService $notifications,
+        private readonly DiscordService      $discord,
     ) {}
 
     // ── Dashboard ─────────────────────────────────────────────────
@@ -88,16 +90,21 @@ final class AdminController
             }
         }
 
+        $discordOk        = $this->settings->get('discord_webhook_ok') === '1';
+        $discordLastError = $this->settings->get('discord_webhook_last_error', '');
+
         return $this->twig->render($response, 'admin/settings.twig', [
-            'adminSection'  => '/admin/settings',
-            's'             => $this->settings->all(),
-            'locales'       => $this->translator->availableLocales(),
-            'serverName'    => $serverName,
-            'apiKeyOk'      => $apiKeyOk,
-            'smtpOk'        => $smtpOk,
-            'smtpHostError' => $smtpHostError,
-            'smtpAuthError' => $smtpAuthError,
-            'timezones'     => $timezones,
+            'adminSection'     => '/admin/settings',
+            's'                => $this->settings->all(),
+            'locales'          => $this->translator->availableLocales(),
+            'serverName'       => $serverName,
+            'apiKeyOk'         => $apiKeyOk,
+            'smtpOk'           => $smtpOk,
+            'smtpHostError'    => $smtpHostError,
+            'smtpAuthError'    => $smtpAuthError,
+            'timezones'        => $timezones,
+            'discordOk'        => $discordOk,
+            'discordLastError' => $discordLastError,
         ]);
     }
 
@@ -114,12 +121,15 @@ final class AdminController
             'site_title', 'public_mode', 'allow_password_reset', 'allow_magic_link', 'grid_rows', 'poster_cache_days', 'timezone',
             'default_locale', 'default_sort',
             'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from',
+            'discord_webhook_url', 'discord_notify_downloads',
         ];
+
+        $checkboxKeys = ['public_mode', 'allow_password_reset', 'allow_magic_link', 'discord_notify_downloads'];
 
         $data = [];
         foreach ($allowed as $key) {
             // Checkboxes send nothing when unchecked — treat as '0'
-            if ($key === 'public_mode' || $key === 'allow_password_reset' || $key === 'allow_magic_link') {
+            if (in_array($key, $checkboxKeys, true)) {
                 $data[$key] = isset($body[$key]) ? '1' : '0';
             } else {
                 $data[$key] = trim((string) ($body[$key] ?? ''));
@@ -137,13 +147,18 @@ final class AdminController
         }
 
         // __KEEP__ sentinel: masked fields not changed in the UI — preserve the stored value
-        $prevUrl = $this->settings->get('jellyfin_url');
-        $prevKey = $this->settings->get('jellyfin_api_key');
+        $prevUrl        = $this->settings->get('jellyfin_url');
+        $prevKey        = $this->settings->get('jellyfin_api_key');
+        $prevDiscordUrl = $this->settings->get('discord_webhook_url');
+
         if ($data['jellyfin_api_key'] === '__KEEP__') {
             $data['jellyfin_api_key'] = $prevKey;
         }
         if ($data['smtp_password'] === '__KEEP__') {
             $data['smtp_password'] = $this->settings->get('smtp_password');
+        }
+        if ($data['discord_webhook_url'] === '__KEEP__') {
+            $data['discord_webhook_url'] = $prevDiscordUrl;
         }
 
         // If Jellyfin URL or API key changed, invalidate the cached user ID
@@ -152,6 +167,13 @@ final class AdminController
         }
 
         $this->settings->setMany($data);
+
+        // If Discord webhook URL changed, clear the previous test result and disable notifications
+        if ($data['discord_webhook_url'] !== $prevDiscordUrl) {
+            $this->settings->set('discord_webhook_ok', '0');
+            $this->settings->set('discord_webhook_last_error', '');
+            $this->settings->set('discord_notify_downloads', '0');
+        }
 
         // ── SMTP connection test ──────────────────────────────────────
         // Runs once at save time with the freshly-saved config; the result
@@ -231,9 +253,9 @@ final class AdminController
             $errors[] = $this->translator->trans('setup.validation.password_min');
         }
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $errors[] = $this->translator->trans('setup.validation.email_invalid');
-        } elseif ($this->users->emailExists($email)) {
+        } elseif ($email !== '' && $this->users->emailExists($email)) {
             $errors[] = $email . ' is already in use.';
         }
 
@@ -249,7 +271,7 @@ final class AdminController
         $this->users->setForcePasswordChange($userId, true);
 
         // Optional invitation email
-        if (!empty($body['send_invitation']) && $this->notifications->smtpConfigured()) {
+        if (!empty($body['send_invitation']) && $email !== '' && $this->notifications->smtpConfigured()) {
             $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
             $host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
             $siteUrl = $scheme . '://' . $host;
@@ -428,6 +450,30 @@ final class AdminController
             flash('success', "Test email sent to {$to}.");
         } catch (\Throwable $e) {
             flash('error', 'Mail error: ' . $e->getMessage());
+        }
+
+        return $response->withHeader('Location', app_url('/admin/settings'))->withStatus(302);
+    }
+
+    // ── Discord webhook test ──────────────────────────────────────
+
+    public function testDiscord(Request $request, Response $response): Response
+    {
+        $body = (array) $request->getParsedBody();
+
+        if (!csrf_verify((string) ($body['csrf_token'] ?? ''))) {
+            return $response->withHeader('Location', app_url('/admin/settings'))->withStatus(302);
+        }
+
+        try {
+            $this->discord->sendTest();
+            $this->settings->set('discord_webhook_ok', '1');
+            $this->settings->set('discord_webhook_last_error', '');
+            flash('success', $this->translator->trans('admin.settings.discord_test_sent'));
+        } catch (\Throwable $e) {
+            $this->settings->set('discord_webhook_ok', '0');
+            $this->settings->set('discord_webhook_last_error', $e->getMessage());
+            flash('error', $e->getMessage());
         }
 
         return $response->withHeader('Location', app_url('/admin/settings'))->withStatus(302);

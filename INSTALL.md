@@ -9,6 +9,7 @@
 - [Option C — Local development](#option-c--local-development)
 - [First-run setup wizard](#first-run-setup-wizard)
 - [Email features (optional)](#email-features-optional)
+- [Discord notifications (optional)](#discord-notifications-optional)
 - [Updating](#updating)
 - [CLI tools](#cli-tools)
 - [Troubleshooting](#troubleshooting)
@@ -297,6 +298,17 @@ require a working SMTP server configured in **Admin → Settings → Email (SMTP
 Any standard SMTP provider works: Gmail (App Password), Brevo, Mailgun,
 Postmark, Amazon SES, or a self-hosted server. PHPMailer handles TLS/STARTTLS
 automatically based on the port (587 → STARTTLS, 465 → SSL/TLS).
+
+## Discord notifications (optional)
+
+Nanofin can post a message to a Discord channel each time a file is downloaded.
+
+1. In Discord: open your server settings → **Integrations → Webhooks → New Webhook**.
+   Copy the webhook URL.
+2. Go to **Admin → Settings → Discord**.
+3. Paste the webhook URL and click **Save**.
+4. Click **Send test message** to verify the connection — a green ✓ appears on success.
+5. Once verified, check **Post a message on each download** and save again.
 
 ## Updating
 

@@ -14,6 +14,7 @@ use Nanofin\Controllers\LibraryController;
 use Nanofin\Controllers\ProfileController;
 use Nanofin\Controllers\SetupController;
 use Nanofin\Core\Database;
+use Nanofin\Core\DiscordService;
 use Nanofin\Core\JellyfinService;
 use Nanofin\Core\MailService;
 use Nanofin\Core\NotificationService;
@@ -159,6 +160,11 @@ $builder->addDefinitions([
     // MailService
     MailService::class => static function (SettingsModel $settings): MailService {
         return new MailService($settings->all());
+    },
+
+    // DiscordService
+    DiscordService::class => static function (SettingsModel $settings, Translator $translator): DiscordService {
+        return new DiscordService($settings->all(), $translator);
     },
 
     // NotificationService
@@ -317,7 +323,8 @@ $app->group('/admin', function ($group) {
     $group->get('',                       [AdminController::class, 'index']);
     $group->get('/settings',              [AdminController::class, 'settings']);
     $group->post('/settings',             [AdminController::class, 'saveSettings']);
-    $group->post('/settings/test-email',  [AdminController::class, 'testEmail']);
+    $group->post('/settings/test-email',    [AdminController::class, 'testEmail']);
+    $group->post('/settings/test-discord', [AdminController::class, 'testDiscord']);
     $group->get('/users',                 [AdminController::class, 'users']);
     $group->post('/users',                [AdminController::class, 'createUser']);
     $group->post('/users/{id}',           [AdminController::class, 'updateUser']);

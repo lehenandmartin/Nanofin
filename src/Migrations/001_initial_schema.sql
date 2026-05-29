@@ -42,7 +42,11 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
     ('allow_password_reset', '0'),
     ('allow_magic_link',     '0'),
     ('smtp_ok',              '0'),
-    ('smtp_last_error',      '');
+    ('smtp_last_error',      ''),
+    ('discord_webhook_url',        ''),
+    ('discord_notify_downloads',   '0'),
+    ('discord_webhook_ok',         '0'),
+    ('discord_webhook_last_error', '');
 
 -- ── downloads ──────────────────────────────────────────────────
 -- user_id is nullable to support public mode (unauthenticated downloads).
