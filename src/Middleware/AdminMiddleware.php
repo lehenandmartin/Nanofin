@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Nanofin\Middleware;
 
+use Nanofin\Models\SessionModel;
+use Nanofin\Models\SettingsModel;
 use Nanofin\Models\UserModel;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -26,6 +28,8 @@ final class AdminMiddleware implements MiddlewareInterface
     public function __construct(
         private readonly ResponseFactoryInterface $responseFactory,
         private readonly UserModel                $users,
+        private readonly SessionModel             $sessions,
+        private readonly SettingsModel            $settings,
     ) {}
 
     public function process(Request $request, Handler $handler): Response
@@ -69,17 +73,35 @@ final class AdminMiddleware implements MiddlewareInterface
         $userId      = (int) ($sessionData['id'] ?? 0);
         $token       = (string) ($sessionData['session_token'] ?? '');
 
-        if ($userId === 0) {
+        if ($userId === 0 || $token === '') {
             return false;
         }
 
-        $user = $this->users->findById($userId);
+        $session = $this->sessions->findByToken($token);
 
-        if ($user === null || $user['session_token'] === null) {
+        if ($session === null || (int) $session['user_id'] !== $userId) {
             return false;
         }
 
-        return hash_equals($user['session_token'], $token);
+        // Check session expiry
+        $maxDays = (int) $this->settings->get('session_max_days', '30');
+        if ($maxDays > 0) {
+            $expires = strtotime($session['created_at']) + ($maxDays * 86400);
+            if ($expires < time()) {
+                $this->sessions->deleteById((int) $session['id']);
+                return false;
+            }
+        }
+
+        // Throttle last_activity update to once per minute
+        $now         = time();
+        $lastUpdated = (int) ($_SESSION['session_updated_at'] ?? 0);
+        if ($now - $lastUpdated >= 60) {
+            $this->sessions->updateLastActivity((int) $session['id']);
+            $_SESSION['session_updated_at'] = $now;
+        }
+
+        return true;
     }
 
     private function redirectToLogin(Request $request): Response

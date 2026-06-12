@@ -250,8 +250,10 @@ $builder->addDefinitions([
     AdminMiddleware::class => static function (
         ResponseFactoryInterface $factory,
         UserModel $users,
+        SessionModel $sessions,
+        SettingsModel $settings,
     ): AdminMiddleware {
-        return new AdminMiddleware($factory, $users);
+        return new AdminMiddleware($factory, $users, $sessions, $settings);
     },
 ]);
 
