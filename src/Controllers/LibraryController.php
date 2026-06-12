@@ -77,6 +77,10 @@ final class LibraryController
         $jellyfinOrder  = $this->resolveOrder($sort, $order);
         $effectiveDir   = $jellyfinOrder === 'Ascending' ? 'asc' : 'desc';
 
+        $ageLimit = ($_SESSION['user']['age_limit'] ?? null) !== null
+            ? (int) $_SESSION['user']['age_limit']
+            : null;
+
         // Build Jellyfin params
         $jellyfinParams = [
             'IncludeItemTypes' => self::TYPE_MAP[$type],
@@ -89,6 +93,13 @@ final class LibraryController
         if ($search !== '') {
             $jellyfinParams['SearchTerm'] = $search;
             // Jellyfin ignores SortBy when SearchTerm is set (relevance order)
+        }
+
+        // When an age limit is active, fetch the full library at once so PHP-side
+        // pagination is accurate (no pages with fewer items than expected).
+        if ($ageLimit !== null) {
+            $jellyfinParams['Limit']      = 50000;
+            $jellyfinParams['StartIndex'] = 0;
         }
 
         try {
@@ -109,24 +120,22 @@ final class LibraryController
             ]);
         }
 
-        $total = $result['TotalRecordCount'];
-        $pages = $limit > 0 ? (int) ceil($total / $limit) : 1;
+        $allItems = array_map(fn($item) => $this->enrichItem($item), $result['Items']);
 
-        // Enrich items with a local poster URL (never the Jellyfin URL)
-        $items = array_map(
-            fn($item) => $this->enrichItem($item),
-            $result['Items'],
-        );
-
-        // Filter by user age limit (TotalRecordCount stays unfiltered — acceptable)
-        $ageLimit = ($_SESSION['user']['age_limit'] ?? null) !== null
-            ? (int) $_SESSION['user']['age_limit']
-            : null;
         if ($ageLimit !== null) {
-            $items = array_values(array_filter(
-                $items,
+            // Filter then paginate in PHP for accurate page counts
+            $allItems = array_values(array_filter(
+                $allItems,
                 fn($i) => $this->passesAgeLimit($i['officialRating'] ?? null, $ageLimit),
             ));
+            $total = count($allItems);
+            $pages = $limit > 0 ? max(1, (int) ceil($total / $limit)) : 1;
+            $page  = max(1, min($page, $pages));
+            $items = array_slice($allItems, ($page - 1) * $limit, $limit);
+        } else {
+            $total = $result['TotalRecordCount'];
+            $pages = $limit > 0 ? (int) ceil($total / $limit) : 1;
+            $items = $allItems;
         }
 
         return $this->twig->render($response, 'library/index.twig', [
