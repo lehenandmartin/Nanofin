@@ -200,7 +200,7 @@ final class JellyfinService
     {
         $userId = $this->getUserId();
         $item   = $this->get("/Users/{$userId}/Items/{$itemId}", [
-            'Fields' => 'Overview,Genres,ProductionYear,CommunityRating,RunTimeTicks,DateCreated,MediaSources,People',
+            'Fields' => 'Overview,Genres,ProductionYear,CommunityRating,RunTimeTicks,DateCreated,MediaSources,MediaStreams,People',
         ]);
 
         if (empty($item['Id'])) {
@@ -240,7 +240,7 @@ final class JellyfinService
         $result = $this->get("/Shows/{$seriesId}/Episodes", [
             'userId'   => $userId,
             'seasonId' => $seasonId,
-            'Fields'   => 'Overview,MediaSources,RunTimeTicks',
+            'Fields'   => 'Overview,MediaSources,MediaStreams,RunTimeTicks',
         ]);
 
         $episodes = $result['Items'] ?? [];

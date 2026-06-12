@@ -204,6 +204,7 @@ final class LibraryController
         $item['genres']     = $item['Genres'] ?? [];
         $item['year']       = $item['ProductionYear'] ?? null;
         $item['fileSize']   = $this->formatFileSize((int) ($item['MediaSources'][0]['Size'] ?? 0));
+        $item['mediaInfo']  = $this->extractMediaInfo($item['MediaSources'] ?? [], $item['MediaStreams'] ?? []);
         return $item;
     }
 
@@ -218,7 +219,104 @@ final class LibraryController
         $ep['downloadUrl'] = '/download/' . $ep['Id'];
         $ep['duration']    = $this->formatDuration((int) ($ep['RunTimeTicks'] ?? 0));
         $ep['fileSize']    = $this->formatFileSize((int) ($ep['MediaSources'][0]['Size'] ?? 0));
+        $ep['mediaInfo']   = $this->extractMediaInfo($ep['MediaSources'] ?? [], $ep['MediaStreams'] ?? []);
         return $ep;
+    }
+
+    /**
+     * Extract video quality, audio tracks, and subtitle tracks.
+     * Uses MediaSources[0]['MediaStreams'] first, falls back to the item-level MediaStreams
+     * (Jellyfin populates the nested array for single-item calls but may omit it on list endpoints).
+     *
+     * @param array<mixed> $mediaSources  Item's MediaSources array
+     * @param array<mixed> $itemStreams   Item's top-level MediaStreams array (fallback)
+     */
+    private function extractMediaInfo(array $mediaSources, array $itemStreams = []): array
+    {
+        $streams = $mediaSources[0]['MediaStreams'] ?? [];
+        if (empty($streams)) {
+            $streams = $itemStreams;
+        }
+
+        $resolution = null;
+        $bestDim    = 0;
+        $audio      = [];
+        $subtitles  = [];
+
+        foreach ($streams as $s) {
+            $type = $s['Type'] ?? '';
+
+            if ($type === 'Video') {
+                $h   = (int) ($s['Height'] ?? 0);
+                $w   = (int) ($s['Width']  ?? 0);
+                $dim = max($h, $w);
+                if ($dim > $bestDim) {
+                    $bestDim    = $dim;
+                    $resolution = match (true) {
+                        $w >= 3840 || $h >= 2160 => '4K',
+                        $w >= 1920 || $h >= 1080 => '1080p',
+                        $w >= 1280 || $h >= 720  => '720p',
+                        default                  => null,
+                    };
+                }
+            }
+
+            if ($type === 'Audio') {
+                $lang = $s['DisplayLanguage'] ?? null;
+                if ($lang === null || $lang === '') {
+                    $lang = $this->isoToLanguage($s['Language'] ?? '');
+                }
+                if ($lang !== null && $lang !== ''
+                    && !in_array($lang, array_column($audio, 'lang'), true)) {
+                    $audio[] = ['lang' => $lang];
+                }
+            }
+
+            if ($type === 'Subtitle') {
+                $lang = $s['DisplayLanguage'] ?? null;
+                if ($lang === null || $lang === '') {
+                    $lang = $this->isoToLanguage($s['Language'] ?? '');
+                }
+                if ($lang !== null && $lang !== ''
+                    && !in_array($lang, array_column($subtitles, 'lang'), true)) {
+                    $subtitles[] = ['lang' => $lang];
+                }
+            }
+        }
+
+        if ($resolution === null && !$audio && !$subtitles) {
+            return [];
+        }
+
+        return ['resolution' => $resolution, 'audio' => $audio, 'subtitles' => $subtitles];
+    }
+
+    /** Map ISO 639-2 language codes to display names. Falls back to uppercase code. */
+    private function isoToLanguage(string $code): ?string
+    {
+        if ($code === '' || $code === 'und') {
+            return null;
+        }
+        $map = [
+            'fra' => 'Français',  'fre' => 'Français',
+            'eng' => 'English',
+            'spa' => 'Español',   'esp' => 'Español',
+            'deu' => 'Deutsch',   'ger' => 'Deutsch',
+            'ita' => 'Italiano',
+            'por' => 'Português',
+            'jpn' => 'Japanese',
+            'chi' => '中文',       'zho' => '中文',
+            'kor' => '한국어',
+            'rus' => 'Русский',
+            'ara' => 'العربية',
+            'nld' => 'Nederlands', 'dut' => 'Nederlands',
+            'pol' => 'Polski',
+            'swe' => 'Svenska',
+            'nor' => 'Norsk',
+            'dan' => 'Dansk',
+            'fin' => 'Suomi',
+        ];
+        return $map[strtolower($code)] ?? strtoupper($code);
     }
 
     /** Format a file size in bytes as a human-readable string (e.g. "8.2 GB"). */
