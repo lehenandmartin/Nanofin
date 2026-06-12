@@ -174,7 +174,7 @@ final class JellyfinService
         $params = array_merge([
             'IncludeItemTypes' => 'Movie,Series',
             'Recursive'        => 'true',
-            'Fields'           => 'Overview,Genres,ProductionYear,CommunityRating,RunTimeTicks,DateCreated,MediaSources',
+            'Fields'           => 'Overview,Genres,ProductionYear,CommunityRating,RunTimeTicks,DateCreated,MediaSources,OfficialRating',
             'ImageTypeLimit'   => '1',
             'EnableImageTypes' => 'Primary',
             'SortBy'           => 'SortName',
@@ -200,7 +200,7 @@ final class JellyfinService
     {
         $userId = $this->getUserId();
         $item   = $this->get("/Users/{$userId}/Items/{$itemId}", [
-            'Fields' => 'Overview,Genres,ProductionYear,CommunityRating,RunTimeTicks,DateCreated,MediaSources,MediaStreams,People',
+            'Fields' => 'Overview,Genres,ProductionYear,CommunityRating,RunTimeTicks,DateCreated,MediaSources,MediaStreams,OfficialRating,People',
         ]);
 
         if (empty($item['Id'])) {

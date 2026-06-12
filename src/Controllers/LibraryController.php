@@ -13,6 +13,25 @@ use Slim\Views\Twig;
 
 final class LibraryController
 {
+    // Mapping of OfficialRating strings (lowercase) to minimum age integers.
+    // Unknown codes return null → permissive (content is shown).
+    private const RATING_MAP = [
+        'g' => 0, 'tv-y' => 0, 'tv-g' => 0, 'e' => 0,
+        'u' => 0,
+        'fr-tp' => 0, 'fr-u' => 0, 'fr-na' => 0, 'tous publics' => 0,
+        'pg' => 7, 'tv-pg' => 7, 'tv-y7' => 7,
+        'fr-10' => 10, '-10' => 10,
+        '12' => 12, '12a' => 12, 'fr-12' => 12, '-12' => 12,
+        'pg-13' => 13,
+        'tv-14' => 14, '-14' => 14,
+        '15' => 15, 'm' => 15, 'ma15+' => 15,
+        'fr-16' => 16, '-16' => 16,
+        'r' => 17,
+        '18' => 18, 'r18' => 18, 'r18+' => 18,
+        'nc-17' => 18, 'x' => 18,
+        'tv-ma' => 18, 'fr-18' => 18, '-18' => 18,
+    ];
+
     // Jellyfin SortBy field per UI sort key
     private const SORT_MAP = [
         'title'  => ['SortBy' => 'SortName',        'SortOrder' => 'Ascending'],
@@ -99,6 +118,17 @@ final class LibraryController
             $result['Items'],
         );
 
+        // Filter by user age limit (TotalRecordCount stays unfiltered — acceptable)
+        $ageLimit = ($_SESSION['user']['age_limit'] ?? null) !== null
+            ? (int) $_SESSION['user']['age_limit']
+            : null;
+        if ($ageLimit !== null) {
+            $items = array_values(array_filter(
+                $items,
+                fn($i) => $this->passesAgeLimit($i['officialRating'] ?? null, $ageLimit),
+            ));
+        }
+
         return $this->twig->render($response, 'library/index.twig', [
             'items'        => $items,
             'total'        => $total,
@@ -139,6 +169,14 @@ final class LibraryController
             return $response->withStatus(403);
         }
 
+        // Age-limit guard
+        $ageLimit = ($_SESSION['user']['age_limit'] ?? null) !== null
+            ? (int) $_SESSION['user']['age_limit']
+            : null;
+        if ($ageLimit !== null && !$this->passesAgeLimit($item['OfficialRating'] ?? null, $ageLimit)) {
+            return $response->withStatus(403);
+        }
+
         return $this->twig->render($response, 'library/movie.twig', [
             'item'     => $this->enrichItem($item),
             'duration' => $this->formatDuration((int) ($item['RunTimeTicks'] ?? 0)),
@@ -168,6 +206,14 @@ final class LibraryController
         // Content-access guard
         $access = $_SESSION['user']['content_access'] ?? 'both';
         if ($access === 'movies') {
+            return $response->withStatus(403);
+        }
+
+        // Age-limit guard
+        $ageLimit = ($_SESSION['user']['age_limit'] ?? null) !== null
+            ? (int) $_SESSION['user']['age_limit']
+            : null;
+        if ($ageLimit !== null && !$this->passesAgeLimit($item['OfficialRating'] ?? null, $ageLimit)) {
             return $response->withStatus(403);
         }
 
@@ -203,8 +249,9 @@ final class LibraryController
         $item['rating']     = round((float) ($item['CommunityRating'] ?? 0), 1);
         $item['genres']     = $item['Genres'] ?? [];
         $item['year']       = $item['ProductionYear'] ?? null;
-        $item['fileSize']   = $this->formatFileSize((int) ($item['MediaSources'][0]['Size'] ?? 0));
-        $item['mediaInfo']  = $this->extractMediaInfo($item['MediaSources'] ?? [], $item['MediaStreams'] ?? []);
+        $item['fileSize']      = $this->formatFileSize((int) ($item['MediaSources'][0]['Size'] ?? 0));
+        $item['mediaInfo']     = $this->extractMediaInfo($item['MediaSources'] ?? [], $item['MediaStreams'] ?? []);
+        $item['officialRating'] = $item['OfficialRating'] ?? null;
         return $item;
     }
 
@@ -289,6 +336,22 @@ final class LibraryController
         }
 
         return ['resolution' => $resolution, 'audio' => $audio, 'subtitles' => $subtitles];
+    }
+
+    /** Normalize an OfficialRating string to a minimum age integer. Returns null for unknown codes. */
+    public static function normalizeRating(?string $rating): ?int
+    {
+        if ($rating === null || $rating === '') {
+            return null;
+        }
+        return self::RATING_MAP[strtolower(trim($rating))] ?? null;
+    }
+
+    /** Return true if the item's rating is within the user's age limit. */
+    private function passesAgeLimit(?string $rating, int $limit): bool
+    {
+        $age = self::normalizeRating($rating);
+        return $age === null || $age <= $limit;
     }
 
     /** Map ISO 639-2 language codes to display names. Falls back to uppercase code. */

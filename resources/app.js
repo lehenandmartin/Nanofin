@@ -102,6 +102,7 @@ Alpine.data('editUserModal', () => ({
     email:            '',
     role:             'user',
     access:           'both',
+    ageLimitValue:    '',
     isSelf:           false,
     saving:           false,
     saved:            false,
@@ -127,6 +128,7 @@ Alpine.data('editUserModal', () => ({
         this.email            = user.email ?? '';
         this.role             = user.role;
         this.access           = user.access;
+        this.ageLimitValue    = user.ageLimit !== null && user.ageLimit !== undefined ? String(user.ageLimit) : '';
         this.isSelf           = user.isSelf;
         this.saving           = false;
         this.saved            = false;
@@ -164,6 +166,7 @@ Alpine.data('editUserModal', () => ({
                     email:          this.email,
                     role:           this.role,
                     content_access: this.access,
+                    age_limit:      this.ageLimitValue,
                 }),
             });
             const data = await res.json();

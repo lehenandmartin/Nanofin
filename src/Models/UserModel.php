@@ -76,10 +76,10 @@ final class UserModel
         return (int) $stmt->fetchColumn() > 0;
     }
 
-    public function create(string $username, string $passwordHash, string $role = 'user', string $contentAccess = 'both', string $email = ''): int
+    public function create(string $username, string $passwordHash, string $role = 'user', string $contentAccess = 'both', string $email = '', ?int $ageLimit = null): int
     {
-        $stmt = $this->db->prepare('INSERT INTO users (username, password, role, content_access, email) VALUES (?, ?, ?, ?, ?)');
-        $stmt->execute([$username, $passwordHash, $role, $contentAccess, strtolower(trim($email))]);
+        $stmt = $this->db->prepare('INSERT INTO users (username, password, role, content_access, email, age_limit) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$username, $passwordHash, $role, $contentAccess, strtolower(trim($email)), $ageLimit]);
         return (int) $this->db->lastInsertId();
     }
 
@@ -117,6 +117,12 @@ final class UserModel
     {
         $stmt = $this->db->prepare('UPDATE users SET content_access = ? WHERE id = ?');
         $stmt->execute([$contentAccess, $id]);
+    }
+
+    public function updateAgeLimit(int $id, ?int $ageLimit): void
+    {
+        $stmt = $this->db->prepare('UPDATE users SET age_limit = ? WHERE id = ?');
+        $stmt->execute([$ageLimit, $id]);
     }
 
     public function updateLastActivity(int $id): void

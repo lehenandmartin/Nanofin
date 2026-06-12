@@ -123,6 +123,7 @@ final class AuthController
             'username'              => $user['username'],
             'role'                  => $user['role'],
             'content_access'        => $user['content_access'],
+            'age_limit'             => $user['age_limit'] !== null ? (int) $user['age_limit'] : null,
             'session_token'         => $sessionToken,
             'force_password_change' => (bool) ($user['force_password_change'] ?? false),
         ];
@@ -231,6 +232,7 @@ final class AuthController
             'username'              => $user['username'],
             'role'                  => $user['role'],
             'content_access'        => $user['content_access'],
+            'age_limit'             => $user['age_limit'] !== null ? (int) $user['age_limit'] : null,
             'session_token'         => $sessionToken,
             'force_password_change' => (bool) ($user['force_password_change'] ?? false),
         ];

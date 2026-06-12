@@ -245,6 +245,11 @@ final class AdminController
                          ? $body['role'] : 'user';
         $contentAccess = in_array($body['content_access'] ?? '', ['movies', 'shows', 'both'], true)
                          ? $body['content_access'] : 'both';
+        $ageLimitRaw   = trim((string) ($body['age_limit'] ?? ''));
+        $ageLimit      = $ageLimitRaw !== '' ? (int) $ageLimitRaw : null;
+        if ($ageLimit !== null && ($ageLimit < 0 || $ageLimit > 18)) {
+            $ageLimit = null;
+        }
 
         $errors = [];
 
@@ -272,7 +277,7 @@ final class AdminController
         }
 
         $hash   = password_hash($password, PASSWORD_BCRYPT);
-        $userId = $this->users->create($username, $hash, $role, $contentAccess, $email);
+        $userId = $this->users->create($username, $hash, $role, $contentAccess, $email, $ageLimit);
 
         if (!empty($body['force_password_change'])) {
             $this->users->setForcePasswordChange($userId, true);
@@ -375,6 +380,12 @@ final class AdminController
             && in_array($body['content_access'], ['movies', 'shows', 'both'], true)
             ? $body['content_access'] : $target['content_access'];
 
+        $ageLimitRaw = trim((string) ($body['age_limit'] ?? ''));
+        $newAgeLimit = $ageLimitRaw !== '' ? (int) $ageLimitRaw : null;
+        if ($newAgeLimit !== null && ($newAgeLimit < 0 || $newAgeLimit > 18)) {
+            $newAgeLimit = null;
+        }
+
         // Prevent self-demotion
         if ($userId === $meId && $role !== $target['role']) {
             return $this->jsonResponse($response, [
@@ -400,6 +411,13 @@ final class AdminController
             $this->users->updateContentAccess($userId, $contentAccess);
             $securityChanged = true;
         }
+
+        $currentAgeLimit = $target['age_limit'] !== null ? (int) $target['age_limit'] : null;
+        if ($newAgeLimit !== $currentAgeLimit) {
+            $this->users->updateAgeLimit($userId, $newAgeLimit);
+            $securityChanged = true;
+        }
+
         // Invalidate all sessions on security-sensitive changes (not for own account)
         if ($securityChanged && $userId !== $meId) {
             $this->sessions->deleteByUser($userId);

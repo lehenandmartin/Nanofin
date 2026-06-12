@@ -101,6 +101,15 @@ final class DownloadController
             );
         }
 
+        // ── Age-limit enforcement ───────────────────────────────
+        $ageLimit = ($user['age_limit'] ?? null) !== null ? (int) $user['age_limit'] : null;
+        if ($ageLimit !== null) {
+            $age = LibraryController::normalizeRating($item['OfficialRating'] ?? null);
+            if ($age !== null && $age > $ageLimit) {
+                return $this->twig->render($response->withStatus(403), 'errors/403.twig');
+            }
+        }
+
         // ── Log the download ────────────────────────────────────
         $logType     = ($item['Type'] ?? '') === 'Episode' ? 'episode' : 'movie';
         $displayTitle = $this->buildDisplayTitle($item);

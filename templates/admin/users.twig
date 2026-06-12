@@ -83,12 +83,13 @@
                 <div class="flex items-center justify-end gap-2">
                     <button type="button"
                             @click="openModal({
-                                id:       {{ user.id }},
-                                username: {{ user.username|json_encode }},
-                                email:    {{ user.email|json_encode }},
-                                role:     {{ user.role|json_encode }},
-                                access:   {{ user.content_access|json_encode }},
-                                isSelf:   {{ (user.id == auth_user.id) ? 'true' : 'false' }}
+                                id:         {{ user.id }},
+                                username:   {{ user.username|json_encode }},
+                                email:      {{ user.email|json_encode }},
+                                role:       {{ user.role|json_encode }},
+                                access:     {{ user.content_access|json_encode }},
+                                ageLimit:   {{ user.age_limit|json_encode }},
+                                isSelf:     {{ (user.id == auth_user.id) ? 'true' : 'false' }}
                             })"
                             class="btn-ghost text-xs py-1 px-3">
                         {{ trans('admin.users.edit') }}
@@ -172,6 +173,19 @@
                         <option value="shows">{{ trans('admin.users.access_types.shows') }}</option>
                     </select>
                 </div>
+            </div>
+
+            {# Age limit #}
+            <div>
+                <label class="form-label">{{ trans('admin.users.age_limit') }}</label>
+                <select x-model="ageLimitValue" class="form-input">
+                    <option value="">{{ trans('admin.users.age_limit_none') }}</option>
+                    <option value="0">0 — {{ trans('admin.users.age_limit_all') }}</option>
+                    <option value="7">7+</option>
+                    <option value="12">12+</option>
+                    <option value="16">16+</option>
+                    <option value="18">18+</option>
+                </select>
             </div>
 
             {# Error + Save row #}
@@ -388,6 +402,17 @@
                             <option value="shows">{{ trans('admin.users.access_types.shows') }}</option>
                         </select>
                     </div>
+                </div>
+                <div>
+                    <label class="form-label">{{ trans('admin.users.age_limit') }}</label>
+                    <select name="age_limit" class="form-input">
+                        <option value="">{{ trans('admin.users.age_limit_none') }}</option>
+                        <option value="0">0 — {{ trans('admin.users.age_limit_all') }}</option>
+                        <option value="7">7+</option>
+                        <option value="12">12+</option>
+                        <option value="16">16+</option>
+                        <option value="18">18+</option>
+                    </select>
                 </div>
                 {% if smtpConfigured %}
                 <div>
