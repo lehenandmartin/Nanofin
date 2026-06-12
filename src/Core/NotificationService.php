@@ -62,8 +62,7 @@ final class NotificationService
                    . $t('email.invitation.intro', ['site' => $siteName]) . "\n\n"
                    . $t('email.label_url')      . ': ' . $loginUrl . "\n"
                    . $t('email.label_username') . ': ' . $username . "\n"
-                   . $t('email.label_password') . ': ' . $password . "\n\n"
-                   . $t('email.invitation.change_password');
+                   . $t('email.label_password') . ': ' . $password;
 
             $this->mailer->send(
                 to:        $to,
@@ -112,8 +111,7 @@ final class NotificationService
                    . $t('email.password_reset.intro_admin', ['site' => $siteName]) . "\n\n"
                    . $t('email.label_url')      . ': ' . $loginUrl . "\n"
                    . $t('email.label_username') . ': ' . $username . "\n"
-                   . $t('email.label_password') . ': ' . $password . "\n\n"
-                   . $t('email.password_reset.change_password');
+                   . $t('email.label_password') . ': ' . $password;
 
             $this->mailer->send(
                 to:        $to,
@@ -206,8 +204,7 @@ final class NotificationService
                    . $t('email.password_reset.intro_self', ['site' => $siteName]) . "\n\n"
                    . $t('email.label_url')      . ': ' . $loginUrl . "\n"
                    . $t('email.label_username') . ': ' . $username . "\n"
-                   . $t('email.label_password') . ': ' . $password . "\n\n"
-                   . $t('email.password_reset.change_password');
+                   . $t('email.label_password') . ': ' . $password;
 
             $this->mailer->send(
                 to:        $to,

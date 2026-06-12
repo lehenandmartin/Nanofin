@@ -14,6 +14,14 @@ function getCsrf() {
     return document.querySelector('meta[name="csrf-token"]')?.content ?? '';
 }
 
+// ── Password generator (shared by create-user form and reset modal) ──
+function generatePassword(length = 12) {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    return Array.from(array, b => chars[b % chars.length]).join('');
+}
+
 // ── Poster fallback (replaces blocked inline onerror="…") ─────────
 // Handles broken poster images on any page without an inline handler.
 document.addEventListener('error', (e) => {
@@ -103,13 +111,14 @@ Alpine.data('editUserModal', () => ({
     // Password reset
     pwdLoading:      false,
     pwdPassword:     '',
+    pwdInput:        '',
+    pwdForceChange:  true,
     pwdHasEmail:     false,
     pwdSmtpReady:    false,
     pwdEmailSent:    false,
     pwdEmailLoading: false,
     pwdError:        '',
     pwdEmailError:   '',
-    pwdCopied:       false,
 
     openModal(user) {
         this.userId           = user.id;
@@ -123,15 +132,16 @@ Alpine.data('editUserModal', () => ({
         this.saved            = false;
         this.saveError        = '';
         this.hasChanges       = false;
-        this.pwdLoading       = false;
-        this.pwdPassword      = '';
-        this.pwdHasEmail      = false;
+        this.pwdLoading      = false;
+        this.pwdPassword     = '';
+        this.pwdInput        = generatePassword();
+        this.pwdForceChange  = true;
+        this.pwdHasEmail     = false;
         this.pwdSmtpReady     = false;
         this.pwdEmailSent     = false;
         this.pwdEmailLoading  = false;
         this.pwdError         = '';
         this.pwdEmailError    = '';
-        this.pwdCopied        = false;
         this.visible          = true;
     },
 
@@ -172,6 +182,8 @@ Alpine.data('editUserModal', () => ({
         }
     },
 
+    regeneratePwdInput() { this.pwdInput = generatePassword(); },
+
     async doResetPassword() {
         this.pwdLoading = true;
         this.pwdError   = '';
@@ -179,7 +191,11 @@ Alpine.data('editUserModal', () => ({
             const res  = await fetch(`${BASE_PATH}/admin/users/${this.userId}/password`, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body:    new URLSearchParams({ csrf_token: getCsrf() }),
+                body:    new URLSearchParams({
+                    csrf_token:            getCsrf(),
+                    password:              this.pwdInput,
+                    force_password_change: this.pwdForceChange ? '1' : '0',
+                }),
             });
             const data = await res.json();
             if (data.error) {
@@ -195,13 +211,6 @@ Alpine.data('editUserModal', () => ({
         } finally {
             this.pwdLoading = false;
         }
-    },
-
-    copyPassword() {
-        navigator.clipboard.writeText(this.pwdPassword).then(() => {
-            this.pwdCopied = true;
-            setTimeout(() => { this.pwdCopied = false; }, 2000);
-        });
     },
 
     async sendPasswordEmail() {
@@ -225,6 +234,16 @@ Alpine.data('editUserModal', () => ({
             this.pwdEmailLoading = false;
         }
     },
+}));
+
+// ─────────────────────────────────────────────────────────────────
+// Admin: create-user form
+// ─────────────────────────────────────────────────────────────────
+Alpine.data('createUserForm', () => ({
+    newEmail:      '',
+    passwordValue: '',
+    init()       { this.passwordValue = generatePassword(); },
+    regenerate() { this.passwordValue = generatePassword(); },
 }));
 
 // ─────────────────────────────────────────────────────────────────

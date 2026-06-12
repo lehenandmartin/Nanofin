@@ -234,7 +234,7 @@ final class AdminController
         }
 
         $username      = trim((string) ($body['username']       ?? ''));
-        $password      = (string) ($body['password']            ?? '');
+        $password      = trim((string) ($body['password']         ?? ''));
         $email         = strtolower(trim((string) ($body['email'] ?? '')));
         $role          = in_array($body['role'] ?? '', ['admin', 'user'], true)
                          ? $body['role'] : 'user';
@@ -267,8 +267,9 @@ final class AdminController
         $hash   = password_hash($password, PASSWORD_BCRYPT);
         $userId = $this->users->create($username, $hash, $role, $contentAccess, $email);
 
-        // Force the new user to choose their own password on first login
-        $this->users->setForcePasswordChange($userId, true);
+        if (!empty($body['force_password_change'])) {
+            $this->users->setForcePasswordChange($userId, true);
+        }
 
         // Optional invitation email
         if (!empty($body['send_invitation']) && $email !== '' && $this->notifications->smtpConfigured()) {
@@ -507,12 +508,15 @@ final class AdminController
             return $this->jsonResponse($response, ['error' => 'User not found'], 404);
         }
 
-        // Generate a random 12-character alphanumeric password
-        $newPassword = substr(str_replace(['+', '/', '='], ['a', 'b', 'c'], base64_encode(random_bytes(9))), 0, 12);
+        $newPassword = trim((string) ($body['password'] ?? ''));
+        if (mb_strlen($newPassword) < 8) {
+            return $this->jsonResponse($response,
+                ['error' => $this->translator->trans('setup.validation.password_min')], 400);
+        }
 
         $this->users->updatePassword($userId, password_hash($newPassword, PASSWORD_BCRYPT));
         $this->users->setSessionToken($userId, null);
-        $this->users->setForcePasswordChange($userId, true);
+        $this->users->setForcePasswordChange($userId, ($body['force_password_change'] ?? '0') === '1');
 
         $smtpReady = $this->notifications->smtpReady();
         $hasEmail  = ($target['email'] ?? '') !== '' && $smtpReady;

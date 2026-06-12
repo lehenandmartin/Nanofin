@@ -197,12 +197,34 @@
                 {{ trans('admin.users.reset_password.button') }}
             </p>
 
-            {# Before reset — confirm button #}
+            {# Before reset — password field + apply button #}
             <template x-if="pwdPassword === ''">
-                <div>
+                <div class="space-y-3">
                     <template x-if="pwdError !== ''">
-                        <p class="text-sm text-red-400 mb-3" x-text="pwdError"></p>
+                        <p class="text-sm text-red-400" x-text="pwdError"></p>
                     </template>
+                    <div>
+                        <div class="flex gap-2">
+                            <input type="text" class="form-input font-mono text-sm"
+                                   x-model="pwdInput" :disabled="isSelf" autocomplete="off">
+                            <button type="button" @click="regeneratePwdInput()" :disabled="isSelf"
+                                    class="btn-ghost text-sm shrink-0 px-3"
+                                    title="{{ trans('admin.users.generate_password') }}">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <label class="flex items-center gap-3 cursor-pointer mt-2"
+                               :class="isSelf ? 'opacity-50 cursor-not-allowed' : ''">
+                            <input type="checkbox" class="w-4 h-4 rounded accent-[var(--color-accent)]"
+                                   x-model="pwdForceChange" :disabled="isSelf">
+                            <span class="text-sm text-[var(--color-muted)]">
+                                {{ trans('admin.users.force_password_change') }}
+                            </span>
+                        </label>
+                    </div>
                     <button @click="doResetPassword()" :disabled="pwdLoading || isSelf"
                             class="btn-ghost text-sm flex items-center gap-2">
                         <svg x-show="pwdLoading" class="animate-spin w-4 h-4"
@@ -214,46 +236,22 @@
                         {{ trans('admin.users.reset_password.button') }}
                     </button>
                     <template x-if="isSelf">
-                        <p class="mt-2 text-xs text-[var(--color-muted)]">
+                        <p class="text-xs text-[var(--color-muted)]">
                             {{ trans('admin.users.reset_password.self_error') }}
                         </p>
                     </template>
                 </div>
             </template>
 
-            {# After reset — password display + optional email #}
+            {# After reset — confirmation + optional email #}
             <template x-if="pwdPassword !== ''">
                 <div class="space-y-3">
-                    <p class="text-sm text-[var(--color-muted)]">
-                        {{ trans('admin.users.reset_password.modal_intro') }}
-                        <strong class="text-[var(--color-text)]"
-                                x-text="originalUsername"></strong>.
+                    <p class="text-sm text-green-400 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {{ trans('admin.users.reset_password.done') }}
                     </p>
-
-                    {# Password box + copy #}
-                    <div class="flex items-center gap-2 bg-[var(--color-surface-alt)]
-                                border border-[var(--color-border)] rounded-xl px-4 py-3">
-                        <code class="flex-1 text-base font-mono tracking-widest text-[var(--color-text)]"
-                              x-text="pwdPassword"></code>
-                        <button @click="copyPassword()"
-                                class="text-xs flex items-center gap-1.5 text-[var(--color-muted)]
-                                       hover:text-[var(--color-text)] transition-colors shrink-0">
-                            <svg x-show="!pwdCopied" class="w-4 h-4" fill="none"
-                                 stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                            </svg>
-                            <svg x-show="pwdCopied" x-cloak
-                                 class="w-4 h-4 text-green-400" fill="none"
-                                 stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                      stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            <span x-text="pwdCopied
-                                ? '{{ trans('admin.users.reset_password.copied') }}'
-                                : '{{ trans('admin.users.reset_password.copy') }}'"></span>
-                        </button>
-                    </div>
 
                     <template x-if="pwdEmailSent">
                         <p class="text-sm text-green-400 flex items-center gap-1">
@@ -332,7 +330,7 @@
             </div>
 
             <form method="post" action="{{ url('/admin/users') }}" class="space-y-4"
-                  x-data="{ newEmail: '' }">
+                  x-data="createUserForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <div>
                     <label class="form-label">{{ trans('admin.users.username') }}</label>
@@ -344,7 +342,25 @@
                 </div>
                 <div>
                     <label class="form-label">{{ trans('auth.login.password') }}</label>
-                    <input type="password" name="password" class="form-input" required minlength="8">
+                    <div class="flex gap-2">
+                        <input type="text" name="password" class="form-input font-mono"
+                               x-model="passwordValue" required minlength="8" autocomplete="off">
+                        <button type="button" @click="regenerate()"
+                                class="btn-ghost text-sm shrink-0 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            {{ trans('admin.users.generate_password') }}
+                        </button>
+                    </div>
+                    <label class="flex items-center gap-3 cursor-pointer mt-2">
+                        <input type="checkbox" name="force_password_change" value="1" checked
+                               class="w-4 h-4 rounded accent-[var(--color-accent)]">
+                        <span class="text-sm text-[var(--color-muted)]">
+                            {{ trans('admin.users.force_password_change') }}
+                        </span>
+                    </label>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
