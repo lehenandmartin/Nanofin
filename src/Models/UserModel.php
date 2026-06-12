@@ -118,18 +118,6 @@ final class UserModel
         $stmt->execute([date('Y-m-d H:i:s'), $id]);
     }
 
-    public function setSessionToken(int $id, ?string $token): void
-    {
-        $stmt = $this->db->prepare('UPDATE users SET session_token = ? WHERE id = ?');
-        $stmt->execute([$token, $id]);
-    }
-
-    public function revokeAllSessionsExcept(int $exceptUserId): void
-    {
-        $stmt = $this->db->prepare("UPDATE users SET session_token = hex(randomblob(16)) WHERE id != ?");
-        $stmt->execute([$exceptUserId]);
-    }
-
     public function delete(int $id): void
     {
         $stmt = $this->db->prepare('DELETE FROM users WHERE id = ?');

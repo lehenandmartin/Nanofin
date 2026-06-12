@@ -77,6 +77,67 @@
         </form>
     </section>
 
+    {# ── Active sessions ───────────────────────────────────────── #}
+    <section x-data="sessionsList"
+             class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-5">
+            {{ trans('profile.sessions.title') }}
+        </h2>
+
+        <template x-if="error !== ''">
+            <p class="text-sm text-red-400 mb-3" x-text="error"></p>
+        </template>
+
+        <template x-if="loading">
+            <div class="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+                <svg class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+                <span>…</span>
+            </div>
+        </template>
+
+        <template x-if="!loading">
+            <div class="space-y-2">
+                <template x-for="session in sessions" :key="session.id">
+                    <div class="flex items-start justify-between gap-4 py-2.5 border-b border-[var(--color-border)] last:border-0">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-sm font-medium text-[var(--color-text)]" x-text="session.label"></span>
+                                <template x-if="session.current">
+                                    <span class="inline-block text-xs font-medium px-2 py-0.5 rounded-full
+                                                 bg-[var(--color-accent)]/15 text-[var(--color-accent)]">
+                                        {{ trans('profile.sessions.current') }}
+                                    </span>
+                                </template>
+                            </div>
+                            <div class="text-xs text-[var(--color-muted)] mt-0.5 flex items-center gap-2 flex-wrap">
+                                <span x-text="session.ip"></span>
+                                <span>·</span>
+                                <span x-text="session.last_activity"></span>
+                            </div>
+                        </div>
+                        <template x-if="!session.current">
+                            <button @click="revoke(session.id)"
+                                    class="btn-ghost text-sm text-red-400 hover:text-red-300 shrink-0">
+                                {{ trans('profile.sessions.revoke') }}
+                            </button>
+                        </template>
+                    </div>
+                </template>
+
+                <template x-if="hasOthers">
+                    <div class="pt-3">
+                        <button @click="revokeOthers()"
+                                class="btn-ghost text-sm text-[var(--color-muted)] hover:text-[var(--color-text)]">
+                            {{ trans('profile.sessions.revoke_others') }}
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </section>
 
 </div>
 {% endblock %}

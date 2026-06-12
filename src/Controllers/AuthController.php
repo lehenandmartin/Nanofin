@@ -8,6 +8,7 @@ use Nanofin\Core\NotificationService;
 use Nanofin\Core\Translator;
 use Nanofin\Models\AuthTokenModel;
 use Nanofin\Models\LoginAttemptModel;
+use Nanofin\Models\SessionModel;
 use Nanofin\Models\UserModel;
 use Nanofin\Models\SettingsModel;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -29,6 +30,7 @@ final class AuthController
         private readonly LoginAttemptModel   $attempts,
         private readonly NotificationService $notifications,
         private readonly AuthTokenModel      $authTokens,
+        private readonly SessionModel        $sessions,
     ) {}
 
     // ── GET /login ────────────────────────────────────────────────
@@ -103,9 +105,14 @@ final class AuthController
         $this->attempts->clearForIp($ip);
         $this->attempts->purgeOld();
 
-        // Generate a fresh session token and persist it
+        // Generate a fresh session token and persist it in the sessions table
         $sessionToken = bin2hex(random_bytes(16));
-        $this->users->setSessionToken($user['id'], $sessionToken);
+        $this->sessions->create(
+            (int) $user['id'],
+            $sessionToken,
+            $_SERVER['REMOTE_ADDR'] ?? '',
+            $_SERVER['HTTP_USER_AGENT'] ?? '',
+        );
 
         // Rotate session ID to prevent fixation
         session_regenerate_id(true);
@@ -210,7 +217,12 @@ final class AuthController
         $this->attempts->clearForIp($this->clientIp($request));
 
         $sessionToken = bin2hex(random_bytes(16));
-        $this->users->setSessionToken($user['id'], $sessionToken);
+        $this->sessions->create(
+            (int) $user['id'],
+            $sessionToken,
+            $_SERVER['REMOTE_ADDR'] ?? '',
+            $_SERVER['HTTP_USER_AGENT'] ?? '',
+        );
 
         session_regenerate_id(true);
 
@@ -343,9 +355,9 @@ final class AuthController
                     $password .= $chars[random_int(0, strlen($chars) - 1)];
                 }
 
-                // Save hashed password, invalidate active session, and force change on next login
+                // Save hashed password, invalidate all sessions, and force change on next login
                 $this->users->updatePassword($user['id'], password_hash($password, PASSWORD_BCRYPT));
-                $this->users->setSessionToken($user['id'], null);
+                $this->sessions->deleteByUser((int) $user['id']);
                 $this->users->setForcePasswordChange($user['id'], true);
 
                 // Send email (non-fatal if SMTP fails)
@@ -375,8 +387,10 @@ final class AuthController
         }
 
         if (!empty($_SESSION['user'])) {
-            // Remove the stored session token from DB so it can't be reused
-            $this->users->setSessionToken((int) $_SESSION['user']['id'], null);
+            $token = (string) ($_SESSION['user']['session_token'] ?? '');
+            if ($token !== '') {
+                $this->sessions->deleteByToken($token);
+            }
         }
 
         // Destroy session

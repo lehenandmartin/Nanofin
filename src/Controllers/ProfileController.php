@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nanofin\Controllers;
 
 use Nanofin\Core\Translator;
+use Nanofin\Models\SessionModel;
 use Nanofin\Models\UserModel;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -13,9 +14,10 @@ use Slim\Views\Twig;
 final class ProfileController
 {
     public function __construct(
-        private readonly Twig       $twig,
-        private readonly UserModel  $users,
-        private readonly Translator $translator,
+        private readonly Twig         $twig,
+        private readonly UserModel    $users,
+        private readonly Translator   $translator,
+        private readonly SessionModel $sessions,
     ) {}
 
     // ── GET /account ──────────────────────────────────────────────
@@ -109,7 +111,92 @@ final class ProfileController
         return $response->withHeader('Location', app_url('/account'))->withStatus(302);
     }
 
+    // ── GET /account/sessions ─────────────────────────────────────
+
+    public function getSessions(Request $request, Response $response): Response
+    {
+        $user = $this->requireUser();
+        if ($user === null) {
+            return $this->jsonResponse($response, ['error' => 'Unauthorized'], 401);
+        }
+
+        $userId       = (int) $user['id'];
+        $currentToken = (string) ($user['session_token'] ?? '');
+        $rows         = $this->sessions->getByUser($userId);
+
+        $sessions = array_map(fn($row) => [
+            'id'            => (int) $row['id'],
+            'label'         => SessionModel::parseUserAgent((string) $row['user_agent']),
+            'ip'            => (string) $row['ip'],
+            'current'       => $row['token'] === $currentToken,
+            'last_activity' => (string) $row['last_activity'],
+            'created_at'    => (string) $row['created_at'],
+        ], $rows);
+
+        return $this->jsonResponse($response, ['sessions' => $sessions]);
+    }
+
+    // ── POST /account/sessions/{id}/revoke ────────────────────────
+
+    public function revokeSession(Request $request, Response $response, array $args): Response
+    {
+        $user = $this->requireUser();
+        if ($user === null) {
+            return $this->jsonResponse($response, ['error' => 'Unauthorized'], 401);
+        }
+
+        $body = (array) $request->getParsedBody();
+        if (!csrf_verify((string) ($body['csrf_token'] ?? ''))) {
+            return $this->jsonResponse($response, ['error' => 'Invalid CSRF token'], 403);
+        }
+
+        $sessionId = (int) ($args['id'] ?? 0);
+        $userId    = (int) $user['id'];
+
+        // Verify the session belongs to this user before deleting
+        if ($this->sessions->findById($sessionId, $userId) === null) {
+            return $this->jsonResponse($response, ['error' => 'Session not found'], 404);
+        }
+
+        $this->sessions->deleteById($sessionId);
+
+        return $this->jsonResponse($response, ['ok' => true]);
+    }
+
+    // ── POST /account/sessions/revoke-others ──────────────────────
+
+    public function revokeOtherSessions(Request $request, Response $response): Response
+    {
+        $user = $this->requireUser();
+        if ($user === null) {
+            return $this->jsonResponse($response, ['error' => 'Unauthorized'], 401);
+        }
+
+        $body = (array) $request->getParsedBody();
+        if (!csrf_verify((string) ($body['csrf_token'] ?? ''))) {
+            return $this->jsonResponse($response, ['error' => 'Invalid CSRF token'], 403);
+        }
+
+        $userId       = (int) $user['id'];
+        $currentToken = (string) ($user['session_token'] ?? '');
+
+        $currentSession = $this->sessions->findByToken($currentToken);
+        if ($currentSession !== null) {
+            $this->sessions->deleteAllExceptSession($userId, (int) $currentSession['id']);
+        }
+
+        return $this->jsonResponse($response, ['ok' => true]);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────
+
+    private function jsonResponse(Response $response, array $data, int $status = 200): Response
+    {
+        $response->getBody()->write((string) json_encode($data));
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus($status);
+    }
 
     /**
      * Return the session user array, or null if not logged in.

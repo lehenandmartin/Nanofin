@@ -247,6 +247,69 @@ Alpine.data('createUserForm', () => ({
 }));
 
 // ─────────────────────────────────────────────────────────────────
+// Profile: active sessions list
+// ─────────────────────────────────────────────────────────────────
+Alpine.data('sessionsList', () => ({
+    sessions: [],
+    loading:  true,
+    error:    '',
+
+    get hasOthers() {
+        return this.sessions.some(s => !s.current);
+    },
+
+    async init() {
+        await this.load();
+    },
+
+    async load() {
+        this.loading = true;
+        this.error   = '';
+        try {
+            const res  = await fetch(BASE_PATH + '/account/sessions');
+            const data = await res.json();
+            this.sessions = data.sessions ?? [];
+        } catch (e) {
+            this.error = e.message;
+        } finally {
+            this.loading = false;
+        }
+    },
+
+    async revoke(id) {
+        this.error = '';
+        try {
+            const res  = await fetch(`${BASE_PATH}/account/sessions/${id}/revoke`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body:    new URLSearchParams({ csrf_token: getCsrf() }),
+            });
+            const data = await res.json();
+            if (data.error) { this.error = data.error; }
+            else             { await this.load(); }
+        } catch (e) {
+            this.error = e.message;
+        }
+    },
+
+    async revokeOthers() {
+        this.error = '';
+        try {
+            const res  = await fetch(BASE_PATH + '/account/sessions/revoke-others', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body:    new URLSearchParams({ csrf_token: getCsrf() }),
+            });
+            const data = await res.json();
+            if (data.error) { this.error = data.error; }
+            else             { await this.load(); }
+        } catch (e) {
+            this.error = e.message;
+        }
+    },
+}));
+
+// ─────────────────────────────────────────────────────────────────
 // Library: skeleton cards + grid trimming
 // GRID_ROWS is read from data-grid-rows on the grid container.
 // ─────────────────────────────────────────────────────────────────

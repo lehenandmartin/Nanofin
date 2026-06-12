@@ -9,6 +9,7 @@ use Nanofin\Core\JellyfinService;
 use Nanofin\Core\NotificationService;
 use Nanofin\Core\Translator;
 use Nanofin\Models\DownloadModel;
+use Nanofin\Models\SessionModel;
 use Nanofin\Models\SettingsModel;
 use Nanofin\Models\UserModel;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -26,6 +27,7 @@ final class AdminController
         private readonly Translator          $translator,
         private readonly NotificationService $notifications,
         private readonly DiscordService      $discord,
+        private readonly SessionModel        $sessions,
     ) {}
 
     // ── Dashboard ─────────────────────────────────────────────────
@@ -119,7 +121,7 @@ final class AdminController
         $allowed = [
             'jellyfin_url', 'jellyfin_api_key',
             'site_title', 'public_mode', 'allow_password_reset', 'allow_magic_link', 'grid_rows', 'poster_cache_days', 'timezone',
-            'default_locale', 'default_sort',
+            'default_locale', 'default_sort', 'session_max_days',
             'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_from',
             'discord_webhook_url', 'discord_notify_downloads',
         ];
@@ -140,6 +142,9 @@ final class AdminController
         if (!in_array($data['default_sort'], ['title', 'year', 'added', 'rating'], true)) {
             $data['default_sort'] = 'added';
         }
+
+        // session_max_days must be a non-negative integer
+        $data['session_max_days'] = (string) max(0, (int) $data['session_max_days']);
 
         // Validate timezone — fall back to UTC if the submitted value is invalid
         if (!in_array($data['timezone'], \DateTimeZone::listIdentifiers(), true)) {
@@ -382,9 +387,9 @@ final class AdminController
             $this->users->updateContentAccess($userId, $contentAccess);
             $securityChanged = true;
         }
-        // Invalidate session on security-sensitive changes (not for own account)
+        // Invalidate all sessions on security-sensitive changes (not for own account)
         if ($securityChanged && $userId !== $meId) {
-            $this->users->setSessionToken($userId, null);
+            $this->sessions->deleteByUser($userId);
         }
 
         return $this->jsonResponse($response, ['success' => true, 'username' => $username]);
@@ -515,7 +520,7 @@ final class AdminController
         }
 
         $this->users->updatePassword($userId, password_hash($newPassword, PASSWORD_BCRYPT));
-        $this->users->setSessionToken($userId, null);
+        $this->sessions->deleteByUser($userId);
         $this->users->setForcePasswordChange($userId, ($body['force_password_change'] ?? '0') === '1');
 
         $smtpReady = $this->notifications->smtpReady();
@@ -582,7 +587,7 @@ final class AdminController
         }
 
         $meId = (int) ($_SESSION['user']['id'] ?? 0);
-        $this->users->revokeAllSessionsExcept($meId);
+        $this->sessions->deleteAllExceptUser($meId);
 
         flash('success', $this->translator->trans('admin.sessions.revoked'));
 

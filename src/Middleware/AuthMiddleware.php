@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nanofin\Middleware;
 
+use Nanofin\Models\SessionModel;
 use Nanofin\Models\SettingsModel;
 use Nanofin\Models\UserModel;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -18,9 +19,9 @@ use Psr\Http\Server\RequestHandlerInterface as Handler;
  * Behaviour:
  *  - In public mode (settings.public_mode = 1): passes through without check.
  *  - In private mode: requires an active session.
- *  - On every authenticated request: validates the session_token against the
- *    database to support global session revocation.
- *  - Updates last_activity on each authenticated request.
+ *  - On every authenticated request: validates the session token against the
+ *    sessions table and checks for expiry (session_max_days setting).
+ *  - Updates last_activity on each authenticated request (throttled to 1/min).
  *
  * Attach to the library route group (not to /admin — AdminMiddleware handles that).
  */
@@ -30,6 +31,7 @@ final class AuthMiddleware implements MiddlewareInterface
         private readonly ResponseFactoryInterface $responseFactory,
         private readonly SettingsModel            $settings,
         private readonly UserModel                $users,
+        private readonly SessionModel             $sessions,
     ) {}
 
     public function process(Request $request, Handler $handler): Response
@@ -72,8 +74,8 @@ final class AuthMiddleware implements MiddlewareInterface
     // ── Helpers ───────────────────────────────────────────────────
 
     /**
-     * Verify the session token stored in $_SESSION matches the one in the DB.
-     * If they differ, an admin has performed a global revocation.
+     * Verify that the session token in $_SESSION corresponds to a valid,
+     * non-expired row in the sessions table.
      */
     private function sessionIsValid(): bool
     {
@@ -81,23 +83,35 @@ final class AuthMiddleware implements MiddlewareInterface
         $userId      = (int) ($sessionData['id'] ?? 0);
         $token       = (string) ($sessionData['session_token'] ?? '');
 
-        if ($userId === 0) {
+        if ($userId === 0 || $token === '') {
             return false;
         }
 
-        $user = $this->users->findById($userId);
+        $session = $this->sessions->findByToken($token);
 
-        if ($user === null) {
+        if ($session === null || (int) $session['user_id'] !== $userId) {
             return false;
         }
 
-        // null token in DB means the user explicitly logged out and the token
-        // was cleared.  Any stored session referencing that user is invalid.
-        if ($user['session_token'] === null) {
-            return false;
+        // Check session expiry against session_max_days setting
+        $maxDays = (int) $this->settings->get('session_max_days', '30');
+        if ($maxDays > 0) {
+            $expires = strtotime($session['created_at']) + ($maxDays * 86400);
+            if ($expires < time()) {
+                $this->sessions->deleteById((int) $session['id']);
+                return false;
+            }
         }
 
-        return hash_equals($user['session_token'], $token);
+        // Throttle last_activity update to once per minute
+        $now         = time();
+        $lastUpdated = (int) ($_SESSION['session_updated_at'] ?? 0);
+        if ($now - $lastUpdated >= 60) {
+            $this->sessions->updateLastActivity((int) $session['id']);
+            $_SESSION['session_updated_at'] = $now;
+        }
+
+        return true;
     }
 
     private function forceLogout(Request $request): Response

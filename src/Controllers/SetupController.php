@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nanofin\Controllers;
 
 use Nanofin\Core\Translator;
+use Nanofin\Models\SessionModel;
 use Nanofin\Models\SettingsModel;
 use Nanofin\Models\UserModel;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -18,6 +19,7 @@ final class SetupController
         private readonly UserModel     $users,
         private readonly SettingsModel $settings,
         private readonly Translator    $translator,
+        private readonly SessionModel  $sessions,
     ) {}
 
     // ── GET /setup ────────────────────────────────────────────────
@@ -68,7 +70,12 @@ final class SetupController
 
         // ── Auto-login the new admin ──────────────────────────────
         $sessionToken = bin2hex(random_bytes(16));
-        $this->users->setSessionToken($userId, $sessionToken);
+        $this->sessions->create(
+            $userId,
+            $sessionToken,
+            $_SERVER['REMOTE_ADDR'] ?? '',
+            $_SERVER['HTTP_USER_AGENT'] ?? '',
+        );
 
         session_regenerate_id(true);
 

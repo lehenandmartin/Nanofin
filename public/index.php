@@ -27,6 +27,7 @@ use Nanofin\Middleware\SetupMiddleware;
 use Nanofin\Models\AuthTokenModel;
 use Nanofin\Models\DownloadModel;
 use Nanofin\Models\LoginAttemptModel;
+use Nanofin\Models\SessionModel;
 use Nanofin\Models\SettingsModel;
 use Nanofin\Models\UserModel;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -103,6 +104,21 @@ csrf_token();
     }
 })();
 
+// ── Probabilistic expired-session cleanup (~1 % of requests) ─────────
+(function (): void {
+    if (mt_rand(1, 100) !== 1) {
+        return;
+    }
+    try {
+        $maxDays = (int) (new \Nanofin\Models\SettingsModel())->get('session_max_days', '30');
+        if ($maxDays > 0) {
+            (new \Nanofin\Models\SessionModel())->deleteExpired($maxDays);
+        }
+    } catch (\Throwable $e) {
+        error_log('[Nanofin] Session cleanup error: ' . $e->getMessage());
+    }
+})();
+
 // ── Probabilistic poster cache cleanup (~1 % of requests) ─────────
 // Deletes cached poster files older than poster_cache_days (default 30).
 // Runs in the background so it never delays the response.
@@ -142,6 +158,7 @@ $builder->addDefinitions([
     DownloadModel::class     => fn() => new DownloadModel(),
     LoginAttemptModel::class => fn() => new LoginAttemptModel(),
     AuthTokenModel::class    => fn() => new AuthTokenModel(),
+    SessionModel::class      => fn() => new SessionModel(),
 
     // Translator — locale from session, fallback to DB default_locale
     Translator::class => static function (SettingsModel $settings): Translator {
@@ -225,8 +242,9 @@ $builder->addDefinitions([
         ResponseFactoryInterface $factory,
         SettingsModel $settings,
         UserModel $users,
+        SessionModel $sessions,
     ): AuthMiddleware {
-        return new AuthMiddleware($factory, $settings, $users);
+        return new AuthMiddleware($factory, $settings, $users, $sessions);
     },
 
     AdminMiddleware::class => static function (
@@ -307,9 +325,13 @@ $app->group('', function ($group) {
 
 // ── Account — requires login even in public mode ──────────────────
 $app->group('/account', function ($group) {
-    $group->get('',                [ProfileController::class, 'index']);
-    $group->post('/password', [ProfileController::class, 'changePassword']);
-    $group->post('/email',    [ProfileController::class, 'changeEmail']);
+    $group->get('',                       [ProfileController::class, 'index']);
+    $group->post('/password',             [ProfileController::class, 'changePassword']);
+    $group->post('/email',                [ProfileController::class, 'changeEmail']);
+    // Sessions — specific routes must be declared before parametric ones
+    $group->get('/sessions',              [ProfileController::class, 'getSessions']);
+    $group->post('/sessions/revoke-others', [ProfileController::class, 'revokeOtherSessions']);
+    $group->post('/sessions/{id}/revoke', [ProfileController::class, 'revokeSession']);
 })->add(AuthMiddleware::class);
 
 // ── Downloads — protected by AuthMiddleware ───────────────────────
