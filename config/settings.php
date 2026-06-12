@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 // ── Application metadata ─────────────────────────────────────────
-define('APP_VERSION',    '1.1.0');
+define('APP_VERSION',    '1.2.0');
 define('APP_GITHUB_URL', 'https://github.com/lehenandmartin/Nanofin');
 
 // ── Path constants ───────────────────────────────────────────────

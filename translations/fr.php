@@ -231,7 +231,9 @@ return [
                 'shows'  => 'Séries uniquement',
                 'both'   => 'Films et séries',
             ],
-            'username_taken'   => 'Ce nom d\'utilisateur est déjà utilisé.',
+            'username_taken'        => 'Ce nom d\'utilisateur est déjà utilisé.',
+            'username_invalid'      => 'Le nom d\'utilisateur doit faire 50 caractères maximum et ne pas contenir de caractères de contrôle.',
+            'delete_last_admin'     => 'Impossible de supprimer le dernier compte administrateur.',
             'self_role_hint'   => 'Vous ne pouvez pas modifier votre propre rôle.',
             'send_invitation'        => 'Envoyer un e-mail d\'invitation avec les identifiants',
             'force_password_change'  => 'Forcer le changement de mot de passe à la prochaine connexion',
@@ -254,11 +256,6 @@ return [
         'logs' => [
             'title'         => 'Journaux de téléchargement',
             'user'          => 'Utilisateur',
-            'item'          => 'Élément',
-            'type'          => 'Type',
-            'date'          => 'Date',
-            'type_movie'    => 'Film',
-            'type_episode'  => 'Épisode',
             'clear'         => 'Effacer les journaux',
             'clear_confirm' => 'Effacer tous les journaux de téléchargement ?',
             'cleared'       => 'Journaux effacés.',
@@ -285,6 +282,18 @@ return [
     // ── Profile / Mon compte ─────────────────────────────────────
     'profile' => [
         'title' => 'Mon compte',
+        'info' => [
+            'title' => 'Profil',
+            'save'  => 'Mettre à jour',
+        ],
+        'username' => [
+            'title'    => 'Nom d\'utilisateur',
+            'save'     => 'Mettre à jour',
+            'updated'  => 'Nom d\'utilisateur mis à jour.',
+            'taken'    => 'Ce nom d\'utilisateur est déjà pris.',
+            'required' => 'Le nom d\'utilisateur est requis.',
+            'invalid'  => 'Le nom d\'utilisateur doit faire 50 caractères maximum et ne pas contenir de caractères de contrôle.',
+        ],
         'password' => [
             'title'         => 'Modifier le mot de passe',
             'current'       => 'Mot de passe actuel',
@@ -304,6 +313,10 @@ return [
             'updated'        => 'Adresse e-mail mise à jour.',
             'already_in_use' => 'Cette adresse e-mail est déjà utilisée.',
         ],
+        'downloads' => [
+            'title' => 'Historique des téléchargements',
+            'empty' => 'Aucun téléchargement.',
+        ],
         'sessions' => [
             'title'          => 'Sessions actives',
             'current'        => 'Session actuelle',
@@ -311,6 +324,13 @@ return [
             'revoke_others'  => 'Terminer toutes les autres sessions',
             'revoked'        => 'Session terminée.',
             'revoked_others' => 'Toutes les autres sessions ont été terminées.',
+        ],
+        'delete' => [
+            'title'      => 'Zone dangereuse',
+            'warning'    => 'La suppression de votre compte est définitive et ne peut pas être annulée.',
+            'button'     => 'Supprimer mon compte',
+            'confirm'    => 'Êtes-vous sûr de vouloir supprimer définitivement votre compte ? Cette action est irréversible.',
+            'last_admin' => 'Vous êtes le seul administrateur. Attribuez un autre admin avant de supprimer votre compte.',
         ],
     ],
 
@@ -366,6 +386,15 @@ return [
         'forbidden' => 'Vous n\'avez pas la permission de télécharger cet élément.',
         'not_found' => 'Cet élément est introuvable.',
         'logged'    => 'Téléchargement enregistré.',
+    ],
+
+    // ── Download history (shared between profile and admin) ───────
+    'downloads' => [
+        'col_item'    => 'Élément',
+        'col_type'    => 'Type',
+        'col_date'    => 'Date',
+        'type_movie'  => 'Film',
+        'type_episode'=> 'Épisode',
     ],
 
 ];

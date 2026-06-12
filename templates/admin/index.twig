@@ -69,10 +69,10 @@
         <thead>
             <tr class="text-xs uppercase tracking-widest text-[var(--color-muted)]
                        border-b border-[var(--color-border)]">
-                <th class="px-5 py-2.5 text-left">{{ trans('admin.logs.item') }}</th>
+                <th class="px-5 py-2.5 text-left">{{ trans('downloads.col_item') }}</th>
                 <th class="px-5 py-2.5 text-left hidden sm:table-cell">{{ trans('admin.logs.user') }}</th>
-                <th class="px-5 py-2.5 text-left hidden md:table-cell">{{ trans('admin.logs.type') }}</th>
-                <th class="px-5 py-2.5 text-left">{{ trans('admin.logs.date') }}</th>
+                <th class="px-5 py-2.5 text-left hidden md:table-cell">{{ trans('downloads.col_type') }}</th>
+                <th class="px-5 py-2.5 text-left">{{ trans('downloads.col_date') }}</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-[var(--color-border)]">
@@ -86,7 +86,7 @@
                 </td>
                 <td class="px-5 py-3 hidden md:table-cell">
                     <span class="{{ log.item_type == 'movie' ? 'badge-movie' : 'badge-show' }}">
-                        {{ trans('admin.logs.type_' ~ log.item_type) }}
+                        {{ trans('downloads.type_' ~ log.item_type) }}
                     </span>
                 </td>
                 <td class="px-5 py-3 text-[var(--color-muted)] text-xs whitespace-nowrap">

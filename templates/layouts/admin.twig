@@ -61,24 +61,6 @@
                 {% endfor %}
                 </ul>
 
-                {# Revoke sessions button #}
-                <div class="p-3 border-t border-[var(--color-border)]">
-                    <form method="post" action="{{ url('/admin/sessions/revoke') }}"
-                          x-data
-                          @submit.prevent="if(confirm('{{ trans('admin.sessions.revoke_confirm')|e('js') }}')) $el.submit()">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button type="submit"
-                                class="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm
-                                       text-red-400 hover:bg-red-500/10 transition-colors">
-                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                            </svg>
-                            {{ trans('admin.sessions.revoke') }}
-                        </button>
-                    </form>
-                </div>
-
             </nav>
         </aside>
 

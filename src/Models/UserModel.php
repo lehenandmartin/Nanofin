@@ -57,6 +57,13 @@ final class UserModel
         return (int) $stmt->fetchColumn() > 0;
     }
 
+    public function countAdmins(): int
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE role = 'admin'");
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    }
+
     public function emailExists(string $email, ?int $excludeUserId = null): bool
     {
         if ($excludeUserId !== null) {

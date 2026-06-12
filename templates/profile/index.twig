@@ -5,79 +5,137 @@
 {% block content %}
 <div class="max-w-2xl mx-auto px-4 sm:px-6 py-10">
 
-    <h1 class="text-2xl font-black text-[var(--color-text)] mb-8">
+    <h1 class="text-2xl font-black text-[var(--color-text)] mb-6">
         {{ trans('profile.title') }}
-        <span class="text-base font-normal text-[var(--color-muted)] ml-2">
-            {{ auth_user.username }}
-        </span>
+        <span class="text-base font-normal text-[var(--color-muted)] ml-2">{{ auth_user.username }}</span>
     </h1>
 
-    {# ── Change password ───────────────────────────────────────── #}
-    <section class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
-        <h2 class="text-sm font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-5">
-            {{ trans('profile.password.title') }}
-        </h2>
+    {# ── Profile (username + email + password) ───────────────────────── #}
+    <section class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl mb-6 overflow-hidden">
 
-        <form method="post" action="{{ url('/account/password') }}"
-              x-data="{ loading: false }" @submit="loading = true"
-              class="space-y-4">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="px-6 pt-6 pb-2">
+            <h2 class="text-sm font-semibold uppercase tracking-widest text-[var(--color-muted)]">
+                {{ trans('profile.info.title') }}
+            </h2>
+        </div>
 
-            <div>
-                <label class="form-label">{{ trans('profile.password.current') }}</label>
-                <input type="password" name="current_password" class="form-input"
-                       autocomplete="current-password" required>
-            </div>
-            <div>
-                <label class="form-label">{{ trans('profile.password.new') }}</label>
-                <input type="password" name="new_password" class="form-input"
-                       autocomplete="new-password" required minlength="8">
-            </div>
-            <div>
-                <label class="form-label">{{ trans('profile.password.confirm') }}</label>
-                <input type="password" name="confirm_password" class="form-input"
-                       autocomplete="new-password" required minlength="8">
-            </div>
+        {# Username #}
+        <div class="p-6">
+            <form method="post" action="{{ url('/account/username') }}"
+                  x-data="{ loading: false }" @submit="loading = true">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label class="form-label">{{ trans('profile.username.title') }}</label>
+                <div class="flex gap-2 mt-1">
+                    <input type="text" name="username" class="form-input flex-1"
+                           value="{{ auth_user.username }}" required autocomplete="username"
+                           maxlength="50">
+                    <button type="submit" class="btn-ghost text-sm shrink-0" :disabled="loading">
+                        {{ trans('profile.info.save') }}
+                    </button>
+                </div>
+            </form>
+        </div>
 
-            <div class="flex justify-end pt-1">
-                <button type="submit" class="btn-primary" :disabled="loading">
-                    <svg x-show="loading" x-cloak class="animate-spin w-4 h-4"
-                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                    </svg>
-                    {{ trans('profile.password.save') }}
-                </button>
-            </div>
-        </form>
+        {# Email #}
+        <div class="p-6 border-t border-[var(--color-border)]">
+            <form method="post" action="{{ url('/account/email') }}"
+                  x-data="{ loading: false }" @submit="loading = true">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label class="form-label">{{ trans('profile.email.title') }}</label>
+                <div class="flex gap-2 mt-1">
+                    <input type="email" name="email" class="form-input flex-1"
+                           value="{{ email }}"
+                           placeholder="{{ trans('profile.email.placeholder') }}"
+                           autocomplete="email">
+                    <button type="submit" class="btn-ghost text-sm shrink-0" :disabled="loading">
+                        {{ trans('profile.info.save') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {# Password #}
+        <div class="p-6 border-t border-[var(--color-border)]">
+            <p class="text-sm font-medium text-[var(--color-muted)] mb-4">{{ trans('profile.password.title') }}</p>
+            <form method="post" action="{{ url('/account/password') }}"
+                  x-data="{ loading: false }" @submit="loading = true"
+                  class="space-y-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <div>
+                    <label class="form-label">{{ trans('profile.password.current') }}</label>
+                    <input type="password" name="current_password" class="form-input"
+                           autocomplete="current-password" required>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="form-label">{{ trans('profile.password.new') }}</label>
+                        <input type="password" name="new_password" class="form-input"
+                               autocomplete="new-password" required minlength="8">
+                    </div>
+                    <div>
+                        <label class="form-label">{{ trans('profile.password.confirm') }}</label>
+                        <input type="password" name="confirm_password" class="form-input"
+                               autocomplete="new-password" required minlength="8">
+                    </div>
+                </div>
+                <div class="flex justify-end pt-1">
+                    <button type="submit" class="btn-ghost text-sm" :disabled="loading">
+                        <svg x-show="loading" x-cloak class="animate-spin w-4 h-4"
+                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                        </svg>
+                        {{ trans('profile.password.save') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+
     </section>
 
-    {# ── Email address ─────────────────────────────────────────── #}
+    {# ── Download history ──────────────────────────────────────────── #}
     <section class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
         <h2 class="text-sm font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-5">
-            {{ trans('profile.email.title') }}
+            {{ trans('profile.downloads.title') }}
+            {% if downloads|length > 0 %}
+            <span class="font-normal normal-case tracking-normal ml-1 text-xs">({{ downloads|length }})</span>
+            {% endif %}
         </h2>
 
-        {% if email %}
-        <p class="text-sm text-[var(--color-muted)] mb-4">
-            {{ trans('profile.email.current') }}:
-            <span class="text-[var(--color-text)] font-medium ml-1">{{ email }}</span>
-        </p>
+        {% if downloads|length == 0 %}
+        <p class="text-sm text-[var(--color-muted)]">{{ trans('profile.downloads.empty') }}</p>
+        {% else %}
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-xs uppercase tracking-widest text-[var(--color-muted)]
+                           border-b border-[var(--color-border)]">
+                    <th class="pb-2.5 text-left pr-4 font-medium">{{ trans('downloads.col_item') }}</th>
+                    <th class="pb-2.5 text-left pr-4 font-medium hidden sm:table-cell">{{ trans('downloads.col_type') }}</th>
+                    <th class="pb-2.5 text-left font-medium">{{ trans('downloads.col_date') }}</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--color-border)]">
+            {% for log in downloads %}
+            <tr>
+                <td class="py-2.5 pr-4 font-medium text-[var(--color-text)] max-w-[12rem] truncate">
+                    {{ log.item_title }}
+                </td>
+                <td class="py-2.5 pr-4 hidden sm:table-cell">
+                    <span class="{{ log.item_type == 'movie' ? 'badge-movie' : 'badge-show' }}">
+                        {{ trans('downloads.type_' ~ log.item_type) }}
+                    </span>
+                </td>
+                <td class="py-2.5 text-[var(--color-muted)] text-xs whitespace-nowrap">
+                    {{ log.downloaded_at }}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
         {% endif %}
-
-        <form method="post" action="{{ url('/account/email') }}"
-              x-data="{ loading: false }" @submit="loading = true"
-              class="flex gap-3">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <input type="email" name="email" class="form-input flex-1"
-                   placeholder="{{ trans('profile.email.placeholder') }}" required>
-            <button type="submit" class="btn-ghost flex-shrink-0" :disabled="loading">
-                {{ trans('profile.email.save') }}
-            </button>
-        </form>
     </section>
 
-    {# ── Active sessions ───────────────────────────────────────── #}
+    {# ── Active sessions ───────────────────────────────────────────── #}
     <section x-data="sessionsList"
              class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 mb-6">
         <h2 class="text-sm font-semibold uppercase tracking-widest text-[var(--color-muted)] mb-5">
@@ -101,7 +159,7 @@
         <template x-if="!loading">
             <div class="space-y-2">
                 <template x-for="session in sessions" :key="session.id">
-                    <div class="flex items-start justify-between gap-4 py-2.5 border-b border-[var(--color-border)] last:border-0">
+                    <div class="flex items-center justify-between gap-4 py-2.5 border-b border-[var(--color-border)] last:border-0">
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="text-sm font-medium text-[var(--color-text)]" x-text="session.label"></span>
@@ -120,8 +178,12 @@
                         </div>
                         <template x-if="!session.current">
                             <button @click="revoke(session.id)"
-                                    class="btn-ghost text-sm text-red-400 hover:text-red-300 shrink-0">
-                                {{ trans('profile.sessions.revoke') }}
+                                    class="p-1 text-[var(--color-muted)] hover:text-red-400 transition-colors shrink-0 cursor-pointer"
+                                    title="{{ trans('profile.sessions.revoke') }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
                             </button>
                         </template>
                     </div>
@@ -130,13 +192,38 @@
                 <template x-if="hasOthers">
                     <div class="pt-3">
                         <button @click="revokeOthers()"
-                                class="btn-ghost text-sm text-[var(--color-muted)] hover:text-[var(--color-text)]">
+                                class="btn-ghost text-sm text-red-400 hover:text-red-300">
                             {{ trans('profile.sessions.revoke_others') }}
                         </button>
                     </div>
                 </template>
             </div>
         </template>
+    </section>
+
+    {# ── Danger zone ───────────────────────────────────────────────── #}
+    <section class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6">
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-red-400 mb-4">
+            {{ trans('profile.delete.title') }}
+        </h2>
+
+        {% if isLastAdmin %}
+        <p class="text-sm text-[var(--color-muted)] mb-4">{{ trans('profile.delete.last_admin') }}</p>
+        <button type="button" disabled
+                class="btn-ghost text-sm text-red-400 opacity-40 cursor-not-allowed">
+            {{ trans('profile.delete.button') }}
+        </button>
+        {% else %}
+        <p class="text-sm text-[var(--color-muted)] mb-4">{{ trans('profile.delete.warning') }}</p>
+        <form method="post" action="{{ url('/account/delete') }}"
+              x-data
+              @submit.prevent="if(confirm('{{ trans('profile.delete.confirm')|e('js') }}')) $el.submit()">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn-ghost text-sm text-red-400 hover:text-red-300">
+                {{ trans('profile.delete.button') }}
+            </button>
+        </form>
+        {% endif %}
     </section>
 
 </div>

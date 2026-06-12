@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Nanofin\Controllers;
 
+use Nanofin\Core\Database;
 use Nanofin\Core\Translator;
+use Nanofin\Models\DownloadModel;
 use Nanofin\Models\SessionModel;
 use Nanofin\Models\UserModel;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -14,10 +16,11 @@ use Slim\Views\Twig;
 final class ProfileController
 {
     public function __construct(
-        private readonly Twig         $twig,
-        private readonly UserModel    $users,
-        private readonly Translator   $translator,
-        private readonly SessionModel $sessions,
+        private readonly Twig          $twig,
+        private readonly UserModel     $users,
+        private readonly Translator    $translator,
+        private readonly SessionModel  $sessions,
+        private readonly DownloadModel $downloads,
     ) {}
 
     // ── GET /account ──────────────────────────────────────────────
@@ -29,11 +32,106 @@ final class ProfileController
             return $response->withHeader('Location', app_url('/login?next=/account'))->withStatus(302);
         }
 
-        $dbUser = $this->users->findById((int) $user['id']);
+        $userId = (int) $user['id'];
+        $dbUser = $this->users->findById($userId);
 
         return $this->twig->render($response, 'profile/index.twig', [
-            'email' => $dbUser['email'] ?? '',
+            'email'       => $dbUser['email'] ?? '',
+            'downloads'   => $this->downloads->all($userId, 50),
+            'isLastAdmin' => $user['role'] === 'admin' && $this->users->countAdmins() <= 1,
         ]);
+    }
+
+    // ── POST /account/delete ──────────────────────────────────────
+
+    public function deleteAccount(Request $request, Response $response): Response
+    {
+        $user = $this->requireUser();
+        if ($user === null) {
+            return $response->withHeader('Location', app_url('/login'))->withStatus(302);
+        }
+
+        $body = (array) $request->getParsedBody();
+        if (!csrf_verify((string) ($body['csrf_token'] ?? ''))) {
+            return $response->withHeader('Location', app_url('/account'))->withStatus(302);
+        }
+
+        $userId = (int) $user['id'];
+
+        // Atomic check+delete: BEGIN EXCLUSIVE prevents a concurrent self-deletion
+        // by another admin from racing past the sole-admin guard.
+        $db = Database::getInstance();
+        $db->exec('BEGIN EXCLUSIVE');
+        $fresh = $this->users->findById($userId);
+        if ($fresh !== null && $fresh['role'] === 'admin' && $this->users->countAdmins() <= 1) {
+            $db->exec('ROLLBACK');
+            flash('error', $this->translator->trans('profile.delete.last_admin'));
+            return $response->withHeader('Location', app_url('/account'))->withStatus(302);
+        }
+        $this->users->delete($userId);
+        $db->exec('COMMIT');
+
+        // Destroy the session (same as logout)
+        $_SESSION = [];
+        if (ini_get('session.use_cookies')) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params['path'],
+                $params['domain'],
+                $params['secure'],
+                $params['httponly'],
+            );
+        }
+        session_destroy();
+
+        return $response->withHeader('Location', app_url('/login'))->withStatus(302);
+    }
+
+    // ── POST /account/username ────────────────────────────────────
+
+    public function changeUsername(Request $request, Response $response): Response
+    {
+        $user = $this->requireUser();
+        if ($user === null) {
+            return $response->withHeader('Location', app_url('/login'))->withStatus(302);
+        }
+
+        $body     = (array) $request->getParsedBody();
+
+        if (!csrf_verify((string) ($body['csrf_token'] ?? ''))) {
+            return $response->withHeader('Location', app_url('/account'))->withStatus(302);
+        }
+
+        $username = trim((string) ($body['username'] ?? ''));
+
+        if ($username === '') {
+            flash('error', $this->translator->trans('profile.username.required'));
+            return $response->withHeader('Location', app_url('/account'))->withStatus(302);
+        }
+
+        if (mb_strlen($username) > 50 || preg_match('/[\x00-\x1F\x7F]/', $username)) {
+            flash('error', $this->translator->trans('profile.username.invalid'));
+            return $response->withHeader('Location', app_url('/account'))->withStatus(302);
+        }
+
+        $userId   = (int) $user['id'];
+        $existing = $this->users->findByUsername($username);
+
+        if ($existing !== null && (int) $existing['id'] !== $userId) {
+            flash('error', $this->translator->trans('profile.username.taken'));
+            return $response->withHeader('Location', app_url('/account'))->withStatus(302);
+        }
+
+        $this->users->updateUsername($userId, $username);
+
+        // Keep session in sync
+        $_SESSION['user']['username'] = $username;
+
+        flash('success', $this->translator->trans('profile.username.updated'));
+        return $response->withHeader('Location', app_url('/account'))->withStatus(302);
     }
 
     // ── POST /account/password ────────────────────────────────────

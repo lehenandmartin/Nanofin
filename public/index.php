@@ -328,12 +328,14 @@ $app->group('', function ($group) {
 // ── Account — requires login even in public mode ──────────────────
 $app->group('/account', function ($group) {
     $group->get('',                       [ProfileController::class, 'index']);
+    $group->post('/username',             [ProfileController::class, 'changeUsername']);
     $group->post('/password',             [ProfileController::class, 'changePassword']);
     $group->post('/email',                [ProfileController::class, 'changeEmail']);
     // Sessions — specific routes must be declared before parametric ones
     $group->get('/sessions',              [ProfileController::class, 'getSessions']);
     $group->post('/sessions/revoke-others', [ProfileController::class, 'revokeOtherSessions']);
     $group->post('/sessions/{id}/revoke', [ProfileController::class, 'revokeSession']);
+    $group->post('/delete',               [ProfileController::class, 'deleteAccount']);
 })->add(AuthMiddleware::class);
 
 // ── Downloads — protected by AuthMiddleware ───────────────────────

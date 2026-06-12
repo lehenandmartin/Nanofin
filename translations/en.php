@@ -231,7 +231,9 @@ return [
                 'shows'  => 'Shows only',
                 'both'   => 'Movies & shows',
             ],
-            'username_taken'   => 'This username is already taken.',
+            'username_taken'        => 'This username is already taken.',
+            'username_invalid'      => 'Username must be 50 characters or fewer and contain no control characters.',
+            'delete_last_admin'     => 'You cannot delete the last administrator account.',
             'self_role_hint'   => 'You cannot change your own role.',
             'send_invitation'        => 'Send invitation email with credentials',
             'force_password_change'  => 'Force password change on next login',
@@ -254,11 +256,6 @@ return [
         'logs' => [
             'title'         => 'Download logs',
             'user'          => 'User',
-            'item'          => 'Item',
-            'type'          => 'Type',
-            'date'          => 'Date',
-            'type_movie'    => 'Movie',
-            'type_episode'  => 'Episode',
             'clear'         => 'Clear all logs',
             'clear_confirm' => 'Are you sure you want to clear all download logs?',
             'cleared'       => 'Logs cleared.',
@@ -285,6 +282,18 @@ return [
     // ── Profile / My account ─────────────────────────────────────
     'profile' => [
         'title' => 'My account',
+        'info' => [
+            'title' => 'Profile',
+            'save'  => 'Update',
+        ],
+        'username' => [
+            'title'    => 'Username',
+            'save'     => 'Update',
+            'updated'  => 'Username updated.',
+            'taken'    => 'This username is already taken.',
+            'required' => 'Username is required.',
+            'invalid'  => 'Username must be 50 characters or fewer and contain no control characters.',
+        ],
         'password' => [
             'title'         => 'Change password',
             'current'       => 'Current password',
@@ -304,6 +313,10 @@ return [
             'updated'        => 'Email address updated.',
             'already_in_use' => 'This email address is already in use.',
         ],
+        'downloads' => [
+            'title' => 'Download history',
+            'empty' => 'No downloads yet.',
+        ],
         'sessions' => [
             'title'          => 'Active sessions',
             'current'        => 'Current session',
@@ -311,6 +324,13 @@ return [
             'revoke_others'  => 'End all other sessions',
             'revoked'        => 'Session ended.',
             'revoked_others' => 'All other sessions have been ended.',
+        ],
+        'delete' => [
+            'title'      => 'Danger zone',
+            'warning'    => 'Deleting your account is permanent and cannot be undone.',
+            'button'     => 'Delete my account',
+            'confirm'    => 'Are you sure you want to permanently delete your account? This action cannot be undone.',
+            'last_admin' => 'You are the only administrator. Assign another admin before deleting your account.',
         ],
     ],
 
@@ -366,6 +386,15 @@ return [
         'forbidden' => 'You do not have permission to download this item.',
         'not_found' => 'This item could not be found.',
         'logged'    => 'Download logged.',
+    ],
+
+    // ── Download history (shared between profile and admin) ───────
+    'downloads' => [
+        'col_item'    => 'Item',
+        'col_type'    => 'Type',
+        'col_date'    => 'Date',
+        'type_movie'  => 'Movie',
+        'type_episode'=> 'Episode',
     ],
 
 ];

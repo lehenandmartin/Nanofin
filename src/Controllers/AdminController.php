@@ -250,6 +250,8 @@ final class AdminController
 
         if ($username === '') {
             $errors[] = $this->translator->trans('setup.validation.username_required');
+        } elseif (mb_strlen($username) > 50 || preg_match('/[\x00-\x1F\x7F]/', $username)) {
+            $errors[] = $this->translator->trans('admin.users.username_invalid');
         } elseif ($this->users->findByUsername($username) !== null) {
             $errors[] = $username . ' already exists.';
         }
@@ -300,6 +302,12 @@ final class AdminController
             return $response->withHeader('Location', app_url('/admin/users'))->withStatus(302);
         }
 
+        $target = $this->users->findById($userId);
+        if ($target !== null && $target['role'] === 'admin' && $this->users->countAdmins() <= 1) {
+            flash('error', $this->translator->trans('admin.users.delete_last_admin'));
+            return $response->withHeader('Location', app_url('/admin/users'))->withStatus(302);
+        }
+
         $this->users->delete($userId);
         flash('success', $this->translator->trans('admin.users.deleted'));
 
@@ -330,6 +338,11 @@ final class AdminController
         if ($username === '') {
             return $this->jsonResponse($response, [
                 'error' => $this->translator->trans('setup.validation.username_required'),
+            ], 422);
+        }
+        if (mb_strlen($username) > 50 || preg_match('/[\x00-\x1F\x7F]/', $username)) {
+            return $this->jsonResponse($response, [
+                'error' => $this->translator->trans('admin.users.username_invalid'),
             ], 422);
         }
         if ($username !== $target['username']) {
@@ -591,7 +604,7 @@ final class AdminController
 
         flash('success', $this->translator->trans('admin.sessions.revoked'));
 
-        return $response->withHeader('Location', app_url('/admin'))->withStatus(302);
+        return $response->withHeader('Location', app_url('/admin/users'))->withStatus(302);
     }
 
     // ── Helpers ───────────────────────────────────────────────────

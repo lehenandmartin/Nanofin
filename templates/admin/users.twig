@@ -14,9 +14,19 @@
     <h1 class="text-2xl font-black text-[var(--color-text)]">
         {{ trans('admin.users.title') }}
     </h1>
-    <button @click="$dispatch('open-create-modal')" class="btn-primary text-sm">
-        + {{ trans('admin.users.create') }}
-    </button>
+    <div class="flex items-center gap-3">
+        <form method="post" action="{{ url('/admin/sessions/revoke') }}"
+              x-data
+              @submit.prevent="if(confirm('{{ trans('admin.sessions.revoke_confirm')|e('js') }}')) $el.submit()">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn-ghost text-sm text-red-400 hover:text-red-300">
+                {{ trans('admin.sessions.revoke') }}
+            </button>
+        </form>
+        <button @click="$dispatch('open-create-modal')" class="btn-primary text-sm">
+            + {{ trans('admin.users.create') }}
+        </button>
+    </div>
 </div>
 
 {# ── Users table ───────────────────────────────────────────────── #}
