@@ -104,7 +104,19 @@ final class DownloadController
         // ── Age-limit enforcement ───────────────────────────────
         $ageLimit = ($user['age_limit'] ?? null) !== null ? (int) $user['age_limit'] : null;
         if ($ageLimit !== null) {
-            $age = LibraryController::normalizeRating($item['OfficialRating'] ?? null);
+            $rating = $item['OfficialRating'] ?? null;
+            // Episodes rarely carry their own rating — fall back to the series rating
+            if (($rating === null || $rating === '')
+                && ($item['Type'] ?? '') === 'Episode'
+                && !empty($item['SeriesId'])) {
+                try {
+                    $series = $this->jellyfin->getItem((string) $item['SeriesId']);
+                    $rating = $series['OfficialRating'] ?? null;
+                } catch (\Throwable) {
+                    // series lookup failed — keep the permissive default
+                }
+            }
+            $age = LibraryController::normalizeRating($rating);
             if ($age !== null && $age > $ageLimit) {
                 return $this->twig->render($response->withStatus(403), 'errors/403.twig');
             }

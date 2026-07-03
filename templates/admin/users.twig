@@ -180,11 +180,11 @@
                 <label class="form-label">{{ trans('admin.users.age_limit') }}</label>
                 <select x-model="ageLimitValue" class="form-input">
                     <option value="">{{ trans('admin.users.age_limit_none') }}</option>
-                    <option value="0">0 — {{ trans('admin.users.age_limit_all') }}</option>
-                    <option value="7">7+</option>
-                    <option value="12">12+</option>
-                    <option value="16">16+</option>
-                    <option value="18">18+</option>
+                    <option value="0">{{ trans('admin.users.age_limit_all') }}</option>
+                    <option value="7">{{ trans('admin.users.age_limit_upto', {age: 7}) }}</option>
+                    <option value="12">{{ trans('admin.users.age_limit_upto', {age: 12}) }}</option>
+                    <option value="16">{{ trans('admin.users.age_limit_upto', {age: 16}) }}</option>
+                    <option value="18">{{ trans('admin.users.age_limit_upto', {age: 18}) }}</option>
                 </select>
             </div>
 
@@ -407,11 +407,11 @@
                     <label class="form-label">{{ trans('admin.users.age_limit') }}</label>
                     <select name="age_limit" class="form-input">
                         <option value="">{{ trans('admin.users.age_limit_none') }}</option>
-                        <option value="0">0 — {{ trans('admin.users.age_limit_all') }}</option>
-                        <option value="7">7+</option>
-                        <option value="12">12+</option>
-                        <option value="16">16+</option>
-                        <option value="18">18+</option>
+                        <option value="0">{{ trans('admin.users.age_limit_all') }}</option>
+                        <option value="7">{{ trans('admin.users.age_limit_upto', {age: 7}) }}</option>
+                        <option value="12">{{ trans('admin.users.age_limit_upto', {age: 12}) }}</option>
+                        <option value="16">{{ trans('admin.users.age_limit_upto', {age: 16}) }}</option>
+                        <option value="18">{{ trans('admin.users.age_limit_upto', {age: 18}) }}</option>
                     </select>
                 </div>
                 {% if smtpConfigured %}

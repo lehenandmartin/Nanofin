@@ -17,9 +17,10 @@ final class LibraryController
     // Unknown codes return null → permissive (content is shown).
     private const RATING_MAP = [
         'g' => 0, 'tv-y' => 0, 'tv-g' => 0, 'e' => 0,
-        'u' => 0,
+        'u' => 0, 'tp' => 0, 'approved' => 0, 'passed' => 0,
         'fr-tp' => 0, 'fr-u' => 0, 'fr-na' => 0, 'tous publics' => 0,
         'pg' => 7, 'tv-pg' => 7, 'tv-y7' => 7,
+        'public averti' => 10,
         'fr-10' => 10, '-10' => 10,
         '12' => 12, '12a' => 12, 'fr-12' => 12, '-12' => 12,
         'pg-13' => 13,
@@ -28,8 +29,9 @@ final class LibraryController
         'fr-16' => 16, '-16' => 16,
         'r' => 17,
         '18' => 18, 'r18' => 18, 'r18+' => 18,
-        'nc-17' => 18, 'x' => 18,
+        'nc-17' => 18, 'x' => 18, 'xxx' => 18, 'ao' => 18,
         'tv-ma' => 18, 'fr-18' => 18, '-18' => 18,
+        'banned' => 99, // above every selectable limit: hidden for any restricted account
     ];
 
     // Jellyfin SortBy field per UI sort key
@@ -353,7 +355,17 @@ final class LibraryController
         if ($rating === null || $rating === '') {
             return null;
         }
-        return self::RATING_MAP[strtolower(trim($rating))] ?? null;
+        $key = strtolower(trim($rating));
+        if (isset(self::RATING_MAP[$key])) {
+            return self::RATING_MAP[$key];
+        }
+        // Rating systems vary wildly across countries and metadata sources; most
+        // numbered codes embed the minimum age ("6+", "16", "FSK 12", "FR-14").
+        // Extract the first standalone 1-2 digit number as a fallback.
+        if (preg_match('/(?<!\d)(\d{1,2})(?!\d)/', $key, $m) && (int) $m[1] <= 21) {
+            return (int) $m[1];
+        }
+        return null;
     }
 
     /** Return true if the item's rating is within the user's age limit. */
